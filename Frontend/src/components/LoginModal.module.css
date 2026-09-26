@@ -1,7 +1,7 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
     display: flex;
     justify-content: center;
@@ -41,4 +41,32 @@
 
 .closeButton:hover {
     color: #000;
+}
+
+/* For Choice B (Icon-Only Button) */
+.socialRow {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.iconOnlyButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 50%;
+    /* Perfect circle */
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.iconOnlyButton:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
