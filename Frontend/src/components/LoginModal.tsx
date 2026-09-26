@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Input } from "./ui/Input";
 import styles from "./LoginModal.module.css"
 
 interface LoginModalProps {
@@ -39,12 +40,12 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                     }
                 </div>
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <input
-                        placeholder='Userame/Email' type="text"
+                    <Input
+                        placeholder='Userame/Email' type="text" label="Username or Email"
                         value={user} onChange={(e) => { SetUser(e.target.value) }}
                     />
-                    <input
-                        placeholder='Password' type="password"
+                    <Input
+                        placeholder='Password' type="password" label="Password"
                         value={password} onChange={(e) => setPassword(e.target.value)}
                     />
                     <button type='submit'>
