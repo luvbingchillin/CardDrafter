@@ -5,8 +5,9 @@ import (
 	"net/http"
 )
 
-func setupRoutes() http.Handler {
+func setupRoutes(authHandler *handlers.AuthHandler) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /api/packs", handlers.GetPacks)
+	router.HandleFunc("POST /api/auth/login", authHandler.Login)
 	return router
 }

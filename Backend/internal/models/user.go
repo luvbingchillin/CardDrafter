@@ -20,14 +20,18 @@ type LoginRequest struct {
 }
 
 type UserSummary struct {
-	ID       string
-	Username string
-	Email    string
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 type AuthResponse struct {
-	User    UserSummary
-	Message string
+	User    UserSummary `json:"user"`
+	Message string      `json:"message"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 type RegisterRequest struct {

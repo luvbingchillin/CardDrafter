@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"backend/internal/handlers"
 	"backend/internal/repository"
+	"backend/internal/services"
 
 	"github.com/joho/godotenv" // <-- import godotenv
 )
@@ -33,9 +35,10 @@ func main() {
 	defer client.Disconnect(context.Background())
 
 	userRepo := repository.NewUserRepository(db)
-	_ = userRepo // Ready for our auth service!
+	authService := services.NewAuthService(userRepo)
+	authHandler := handlers.NewAuthHandler(authService)
 
-	router := setupRoutes()
+	router := setupRoutes(authHandler)
 	port := ":8000"
 	fmt.Println("Server listening on http://localhost" + port)
 	if err := http.ListenAndServe(port, router); err != nil {
