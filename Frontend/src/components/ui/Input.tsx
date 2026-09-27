@@ -16,8 +16,9 @@ export function Input({ label, error, className, ...props }: InputProps) {
                 className={`${styles.input} ${error ? styles.hasError : ''} ${className || ''}`}
                 {...props}
             >
-                {error && <span className={styles.errorMessage}>{error}</span>}
             </input>
+            {error && <span className={styles.errorMessage}>{error}</span>}
+
         </div>
     )
 }
