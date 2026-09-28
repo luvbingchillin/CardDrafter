@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Input } from "./ui/Input";
 import styles from "./LoginModal.module.css"
+import { loginUser, registerUser } from "../api/auth";
 
 interface LoginModalProps {
     isOpen: boolean
@@ -12,56 +13,137 @@ interface LoginModalProps {
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     const [user, SetUser] = useState('')
     const [password, setPassword] = useState('')
-    const [errorText, SetErrorText] = useState('')
-    const handleSubmit = async (e) => {
+    const [email, setEmail] = useState('')
+    const [errorText, setErrorText] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [isLogin, setIsLogin] = useState(true)
+    const handleSubmitLogin = async (e) => {
+        e.preventDefault()
+        setErrorText('')
+        setIsLoading(true)
         try {
-            /*             e.preventDefault()
-                        let response = await submitLogin(user, password)
-                        if (response.ok == true) {
-                            onSuccess()
-                            onClose()
-                        } else {
-                            SetErrorText(`Error:${response.error}`)
-                        } */
+            await loginUser(user, password)
+            onSuccess()
+            onClose()
         } catch (err) {
-            SetErrorText('Network error')
+            setErrorText(err.message || 'Network error')
+        } finally {
+            setIsLoading(false)
         }
 
     }
+    const handleSubmitRegister = async (e) => {
+        e.preventDefault()
+        setErrorText('')
+        setIsLoading(true)
+        try {
+            await registerUser(user, password, email)
+            onSuccess()
+            onClose()
+        } catch (err) {
+            setErrorText(err.message || 'Network error')
+        } finally {
+            setIsLoading(false)
+        }
+
+    }
+    const switchMode = (loginMode: boolean) => {
+        setIsLogin(loginMode);
+        setErrorText('');
+        SetUser('');
+        setPassword('');
+        setEmail('');
+    };
+
     if (!isOpen) return null
     return (
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                <div className={styles.header}>
-                    <h3>Login/Sign Up</h3>
-                    <button className={styles.closeButton} onClick={onClose}>X</button>
-                    {errorText &&
-                        <div style={{ color: "red" }}>{errorText}</div>
-                    }
-                </div>
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <Input
-                        placeholder='Userame/Email' type="text" label="Username or Email"
-                        value={user} onChange={(e) => { SetUser(e.target.value) }}
-                    />
-                    <Input
-                        placeholder='Password' type="password" label="Password"
-                        value={password} onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button type='submit'>
-                        Submit
-                    </button>
-                    <div className={styles.socialRow}>
-                        <button
-                            onClick={() => { window.location.href = "temp/auth/googe" }}
-                            type="button"
-                            className={styles.iconOnlyButton}
+                {isLogin ? (
+                    <>
+                        <div className={styles.header}>
+                            <h3>Login</h3>
+                            <button className={styles.closeButton} onClick={onClose}>X</button>
+                        </div>
+                        {errorText &&
+                            <div style={{ color: "red" }}>{errorText}</div>
+                        }
+                        <form onSubmit={handleSubmitLogin} className={styles.form}>
+                            <Input
+                                placeholder='Userame/Email' type="text" label="Username or Email"
+                                value={user} onChange={(e) => { SetUser(e.target.value) }}
+                            />
+                            <Input
+                                placeholder='Password' type="password" label="Password"
+                                value={password} onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button type='submit'>
+                                Submit
+                            </button>
+                            <div className={styles.socialRow}>
+                                <button
+                                    onClick={() => { window.location.href = "temp/auth/googe" }}
+                                    type="button"
+                                    className={styles.iconOnlyButton}
 
-                        >
-                            <GoogleIcon />
-                        </button>
-                    </div>
-                </form>
+                                >
+                                    <GoogleIcon />
+                                </button>
+                            </div>
+                            <p>
+                                Don't have an account?{" "}
+                                <button type="button" onClick={() => { switchMode(false) }}>
+                                    Sign Up
+                                </button>
+                            </p>
+                        </form>
+                    </>
+                ) : (
+                    <>
+                        <div className={styles.header}>
+                            <h3>Register</h3>
+                            <button className={styles.closeButton} onClick={onClose}>X</button>
+                        </div>
+                        {errorText &&
+                            <div style={{ color: "red" }}>{errorText}</div>
+                        }
+                        <form onSubmit={handleSubmitRegister} className={styles.form}>
+                            <Input
+                                placeholder='Userame' type="text" label="Username"
+                                value={user} onChange={(e) => { SetUser(e.target.value) }}
+                            />
+                            <Input
+                                placeholder='Email' type="text" label="Email"
+                                value={email} onChange={(e) => { setEmail(e.target.value) }}
+                            />
+                            <Input
+                                placeholder='Password' type="password" label="Password"
+                                value={password} onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button type='submit'>
+                                {isLoading ? 'Creating account...' : 'Submit'}
+                            </button>
+                            <div className={styles.socialRow}>
+                                <button
+                                    onClick={() => { window.location.href = "temp/auth/googe" }}
+                                    type="button"
+                                    className={styles.iconOnlyButton}
+
+                                >
+                                    <GoogleIcon />
+                                </button>
+                            </div>
+                            <p>
+                                Already have an account?{" "}
+                                <button type="button" onClick={() => { switchMode(true) }}>
+                                    Log In
+                                </button>
+                            </p>
+                        </form>
+                    </>
+                )
+                }
+
             </div>
         </div>
     )
