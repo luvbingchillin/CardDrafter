@@ -60,3 +60,39 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 		Message: "Registration successful",
 	}, nil
 }
+
+func (s *AuthService) ProcessGoogleUser(ctx context.Context, googleID, email, name string) (*models.User, error) {
+	// 1. Check if user already exists by Google ID
+	user, err := s.userRepo.FindByGoogleId(ctx, googleID)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		// User already has an account linked with Google!
+		return user, nil
+	}
+
+	// 2. Check if a user exists with this email (e.g. they previously signed up with password)
+	existingUser, err := s.userRepo.FindByLogin(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if existingUser != nil {
+		// Optional / Best Practice: You could link their Google ID here!
+		return existingUser, nil
+	}
+
+	// 3. Brand new user: Register them!
+	newUser := &models.User{
+		Username:  name,
+		Email:     email,
+		GoogleID:  googleID,
+		CreatedAt: time.Now(),
+	}
+
+	if err := s.userRepo.CreateUser(ctx, newUser); err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
+}

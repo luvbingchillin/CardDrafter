@@ -37,7 +37,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         setErrorText('')
         setIsLoading(true)
         try {
-            await registerUser(user, password, email)
+            await registerUser(user, email, password)
             onSuccess()
             onClose()
         } catch (err) {
@@ -82,7 +82,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                             </button>
                             <div className={styles.socialRow}>
                                 <button
-                                    onClick={() => { window.location.href = "temp/auth/googe" }}
+                                    onClick={() => { window.location.href = "http://localhost:8000/api/auth/google" }}
                                     type="button"
                                     className={styles.iconOnlyButton}
 
@@ -125,7 +125,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                             </button>
                             <div className={styles.socialRow}>
                                 <button
-                                    onClick={() => { window.location.href = "temp/auth/googe" }}
+                                    onClick={() => { window.location.href = "http://localhost:8000/api/auth/google" }}
                                     type="button"
                                     className={styles.iconOnlyButton}
 

@@ -10,8 +10,9 @@ type User struct {
 	ID           bson.ObjectID `bson:"_id,omitempty" json:"id"`
 	Username     string        `bson:"username"      json:"username"`
 	Email        string        `bson:"email"         json:"email"`
-	PasswordHash string        `bson:"password_hash" json:"-"`
+	PasswordHash string        `bson:"password_hash,omitempty" json:"-"`
 	CreatedAt    time.Time     `bson:"created_at"    json:"created_at"`
+	GoogleID     string        `bson:"google_id,omitempty"     json:"-"`
 }
 
 type LoginRequest struct {

@@ -10,5 +10,7 @@ func setupRoutes(authHandler *handlers.AuthHandler) http.Handler {
 	router.HandleFunc("GET /api/packs", handlers.GetPacks)
 	router.HandleFunc("POST /api/auth/login", authHandler.Login)
 	router.HandleFunc("POST /api/auth/register", authHandler.Register)
+	router.HandleFunc("GET /api/auth/google/callback", authHandler.HandleGoogleCallback)
+	router.HandleFunc("GET /api/auth/google", authHandler.HandleGoogleLogin)
 	return router
 }
