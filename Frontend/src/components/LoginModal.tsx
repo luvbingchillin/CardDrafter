@@ -58,7 +58,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     if (!isOpen) return null
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={`${styles.modal} ${isLogin ? styles.modalLogin : styles.modalRegister}`} onClick={(e) => e.stopPropagation()}>
                 {isLogin ? (
                     <>
                         <div className={styles.header}>
@@ -68,7 +68,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                         {errorText &&
                             <div className={styles.errorAlert}>{errorText}</div>
                         }
-                        <form onSubmit={handleSubmitLogin} className={styles.form}>
+                        <form key="login" onSubmit={handleSubmitLogin} className={styles.form}>
                             <Input
                                 placeholder='Userame/Email' type="text" label="Username or Email"
                                 value={user} onChange={(e) => { SetUser(e.target.value) }}
@@ -110,7 +110,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                         {errorText &&
                             <div className={styles.errorAlert}>{errorText}</div>
                         }
-                        <form onSubmit={handleSubmitRegister} className={styles.form}>
+                        <form key="register" onSubmit={handleSubmitRegister} className={styles.form}>
                             <Input
                                 placeholder='Userame' type="text" label="Username"
                                 value={user} onChange={(e) => { SetUser(e.target.value) }}

@@ -20,8 +20,17 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-
+    transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.modalLogin {
+    max-height: 440px;
+}
+
+.modalRegister {
+    max-height: 520px;
 }
 
 @keyframes modalPop {
@@ -49,6 +58,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    animation: formSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .footerText {
@@ -176,4 +186,18 @@
     align-items: center;
     justify-content: center;
     text-align: center;
+}
+
+
+@keyframes formSlide {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+        /* Slides in smoothly from the right */
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }

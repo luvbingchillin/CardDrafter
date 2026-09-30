@@ -1,5 +1,7 @@
 /* Global CSS Reset & Base Styles */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -9,6 +11,7 @@
 }
 
 :root {
+  interpolate-size: allow-keywords;
   /* 60% Dominant Base Canvas */
   --bg-base: #0b0f19;
   --bg-surface: #111827;

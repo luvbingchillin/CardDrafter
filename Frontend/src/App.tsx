@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, Route, Routes } from 'react-router-dom'
+import { Route, Routes, NavLink } from 'react-router-dom'
 import { useSearchParams } from 'react-router-dom';
 import { LoginModal } from './components/LoginModal'
 import { PackSimulator } from './pages/PackSimulator'
@@ -22,20 +22,20 @@ function App() {
   return (
     <>
       <header className='header'>
-        <Link to='/' className='brand'>
+        <NavLink to='/' className='brand'>
           <span className='brand-text'>Placeholder</span>
-        </Link>
+        </NavLink>
         <nav className='nav'>
-          <Link className='navLink'
+          <NavLink className='navLink'
             to="/packs"
           >
             Pack simulator
-          </Link>
-          <Link className='navLink'
+          </NavLink>
+          <NavLink className='navLink'
             to="/draft"
           >
             Draft simulator
-          </Link>
+          </NavLink>
         </nav>
         <div className='userSection'>
           {!isAuth ? (
