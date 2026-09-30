@@ -63,10 +63,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                     <>
                         <div className={styles.header}>
                             <h3>Login</h3>
-                            <button className={styles.closeButton} onClick={onClose}>X</button>
+                            <button className={styles.closeButton} onClick={onClose}><CloseIcon /></button>
                         </div>
                         {errorText &&
-                            <div style={{ color: "red" }}>{errorText}</div>
+                            <div className={styles.errorAlert}>{errorText}</div>
                         }
                         <form onSubmit={handleSubmitLogin} className={styles.form}>
                             <Input
@@ -77,9 +77,12 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                                 placeholder='Password' type="password" label="Password"
                                 value={password} onChange={(e) => setPassword(e.target.value)}
                             />
-                            <button type='submit'>
+                            <button className={styles.submit} type='submit'>
                                 Submit
                             </button>
+                            <div className={styles.divider}>
+                                <span>or continue with</span>
+                            </div>
                             <div className={styles.socialRow}>
                                 <button
                                     onClick={() => { window.location.href = "http://localhost:8000/api/auth/google" }}
@@ -90,9 +93,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                                     <GoogleIcon />
                                 </button>
                             </div>
-                            <p>
+                            <p className={styles.footerText}>
                                 Don't have an account?{" "}
-                                <button type="button" onClick={() => { switchMode(false) }}>
+                                <button className={styles.toggle} type="button" onClick={() => { switchMode(false) }}>
                                     Sign Up
                                 </button>
                             </p>
@@ -102,10 +105,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                     <>
                         <div className={styles.header}>
                             <h3>Register</h3>
-                            <button className={styles.closeButton} onClick={onClose}>X</button>
+                            <button className={styles.closeButton} onClick={onClose}><CloseIcon /></button>
                         </div>
                         {errorText &&
-                            <div style={{ color: "red" }}>{errorText}</div>
+                            <div className={styles.errorAlert}>{errorText}</div>
                         }
                         <form onSubmit={handleSubmitRegister} className={styles.form}>
                             <Input
@@ -120,9 +123,12 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                                 placeholder='Password' type="password" label="Password"
                                 value={password} onChange={(e) => setPassword(e.target.value)}
                             />
-                            <button type='submit'>
+                            <button className={styles.submit} type='submit'>
                                 {isLoading ? 'Creating account...' : 'Submit'}
                             </button>
+                            <div className={styles.divider}>
+                                <span>or continue with</span>
+                            </div>
                             <div className={styles.socialRow}>
                                 <button
                                     onClick={() => { window.location.href = "http://localhost:8000/api/auth/google" }}
@@ -133,9 +139,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                                     <GoogleIcon />
                                 </button>
                             </div>
-                            <p>
+                            <p className={styles.footerText}>
                                 Already have an account?{" "}
-                                <button type="button" onClick={() => { switchMode(true) }}>
+                                <button className={styles.toggle} type="button" onClick={() => { switchMode(true) }}>
                                     Log In
                                 </button>
                             </p>
@@ -169,6 +175,14 @@ function GoogleIcon() {
                 fill="#EA4335"
                 d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
             />
+        </svg>
+    );
+}
+
+function CloseIcon() {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
         </svg>
     );
 }

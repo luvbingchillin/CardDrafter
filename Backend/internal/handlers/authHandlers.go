@@ -3,6 +3,7 @@ package handlers
 import (
 	"backend/internal/models"
 	"backend/internal/services"
+	"backend/internal/utils"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -42,6 +43,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 	} else {
+		token, err := utils.GenerateToken(response.User.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "failed to generate session"})
+			return
+		}
+		setAuthCookie(w, token)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	}
@@ -61,6 +69,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 	} else {
+		token, err := utils.GenerateToken(response.User.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "failed to generate session"})
+			return
+		}
+		setAuthCookie(w, token)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	}
@@ -97,12 +112,30 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	json.NewDecoder(resp.Body).Decode(&googleUser)
 
 	// 4. Delegate to AuthService: Find existing user or register new user
-	_, err = h.authService.ProcessGoogleUser(r.Context(), googleUser.ID, googleUser.Email, googleUser.Name)
+	user, err := h.authService.ProcessGoogleUser(r.Context(), googleUser.ID, googleUser.Email, googleUser.Name)
 	if err != nil {
 		http.Error(w, "Authentication failed", http.StatusInternalServerError)
 		return
 	}
 
-	// 5. Redirect back to frontend homepage
+	// Generate token using user.ID.Hex() and set cookie
+	jwtoken, err := utils.GenerateToken(user.ID.Hex())
+	if err == nil {
+		setAuthCookie(w, jwtoken)
+	}
+
 	http.Redirect(w, r, "http://localhost:5173/?auth=success", http.StatusSeeOther)
+
+}
+
+func setAuthCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",                  // Available across all backend routes
+		HttpOnly: true,                 // Prevents JavaScript access (XSS protection)
+		Secure:   false,                // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode, // Prevents CSRF attacks
+		MaxAge:   3600 * 24 * 7,        // 7 days in seconds
+	})
 }

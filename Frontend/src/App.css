@@ -1,1 +1,80 @@
 /* App-specific custom styles */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 2rem;
+    background-color: rgba(11, 15, 25, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    z-index: 100;
+    top: 0;
+    position: sticky;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.brand:hover {
+    color: var(--primary-text);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.userBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 20px;
+    background-color: var(--primary-tint);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: var(--primary-text);
+    padding: 0.4rem 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.navLink {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.navLink:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+}
+
+.loginBtn {
+    background-color: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.loginBtn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px var(--primary-glow);
+}

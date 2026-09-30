@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { LoginModal } from './components/LoginModal'
 import { PackSimulator } from './pages/PackSimulator'
 import { DraftSimulator } from './pages/DraftSimulator'
+import "./App.css"
 function App() {
   const [isAuth, setIsAuth] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,26 +21,37 @@ function App() {
   }, [searchParams]);
   return (
     <>
-      <h1>Card Simulator</h1>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <nav>
-          <Link
+      <header className='header'>
+        <Link to='/' className='brand'>
+          <span className='brand-text'>Placeholder</span>
+        </Link>
+        <nav className='nav'>
+          <Link className='navLink'
             to="/packs"
           >
             Pack simulator
           </Link>
-          <Link
+          <Link className='navLink'
             to="/draft"
           >
             Draft simulator
           </Link>
         </nav>
-        <button onClick={() => SetLoginPopup(true)}
-        >
-          //user icon here
-          <div>Login/SignUp</div>
-        </button>
+        <div className='userSection'>
+          {!isAuth ? (
+            <button className='loginBtn' onClick={() => SetLoginPopup(true)}
+            >
+              <div>Login/SignUp</div>
+            </button>
+          ) : (
+            <div className='userBadge'>
+              <span>My account</span>
+            </div>
+          )}
+        </div>
+
       </header>
+
       <LoginModal
         isOpen={loginPopup}
         onClose={() => { SetLoginPopup(false) }}
@@ -47,6 +59,7 @@ function App() {
       />
 
       <Routes>
+        <Route path="/" element={<PackSimulator />} />
         <Route path="/packs" element={<PackSimulator />} />
         <Route path="/draft" element={<DraftSimulator />} />
       </Routes>
