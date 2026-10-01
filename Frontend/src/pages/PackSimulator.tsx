@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCardPacks } from '../api/pack';
-import { Pack } from '../api/pack';
+import { getCardPacks, type Pack } from '../api/pack';
 import styles from './PackSimulator.module.css';
 
 export function PackSimulator() {

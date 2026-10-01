@@ -15,3 +15,10 @@ type Set struct {
 	PackImage   string        `bson:"pack_image"     json:"pack_image"`   // "/packs/BLB.jpg"
 	CreatedAt   time.Time     `bson:"created_at"     json:"created_at"`
 }
+
+type PackInfo struct {
+	SetCode    string `json:"setCode"`
+	Name       string `json:"name"`
+	Image      string `json:"image"`      // e.g. "/packs/BLB.jpg"
+	TotalCards int    `json:"totalCards"` // Optional: cards in the set
+}
