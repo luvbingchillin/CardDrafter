@@ -1,5 +1,3 @@
 export function DraftSimulator() {
-    return (
-        <div>DraftSim</div>
-    )
+  return <div>DraftSim</div>;
 }
