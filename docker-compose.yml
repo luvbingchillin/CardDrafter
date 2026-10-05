@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # The Go Backend Service
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # The Frontend + Nginx Service
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80" # Maps port 80 on your machine to port 80 in Nginx
+    depends_on:
+      - backend
+    restart: unless-stopped

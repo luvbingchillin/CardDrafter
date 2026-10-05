@@ -16,7 +16,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [errorText, setErrorText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const handleSubmitLogin = async (e) => {
+  const handleSubmitLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorText('');
     setIsLoading(true);
@@ -25,12 +25,17 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       onSuccess();
       onClose();
     } catch (err) {
-      setErrorText(err.message || 'Network error');
-    } finally {
+      if (err instanceof Error) {
+        setErrorText(err.message);
+      } else {
+        setErrorText('Network error');
+      }
+    }
+    finally {
       setIsLoading(false);
     }
   };
-  const handleSubmitRegister = async (e) => {
+  const handleSubmitRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorText('');
     setIsLoading(true);
@@ -39,8 +44,13 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       onSuccess();
       onClose();
     } catch (err) {
-      setErrorText(err.message || 'Network error');
-    } finally {
+      if (err instanceof Error) {
+        setErrorText(err.message);
+      } else {
+        setErrorText('Network error');
+      }
+    }
+    finally {
       setIsLoading(false);
     }
   };

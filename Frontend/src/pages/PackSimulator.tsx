@@ -35,8 +35,7 @@ export function PackSimulator() {
   return (
     <div className={styles.pageContainer}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Booster Simulator</h1>
-        <p className={styles.subtitle}>Select an expansion pack to open</p>
+        <p className={styles.subtitle}>Select a pack to open</p>
       </div>
       <div className={styles.packGrid}>
         {packData.map((pack) => (
@@ -49,8 +48,9 @@ export function PackSimulator() {
               />
             </div>
             <div className={styles.packInfo}>
-              <span className={styles.setCode}>{pack.setCode}</span>
               <p className={styles.packName}>{pack.name}</p>
+              <span className={styles.setCode}>{pack.setCode}</span>
+
             </div>
           </div>
         ))}

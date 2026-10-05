@@ -56,11 +56,6 @@ body {
   background-color: var(--bg-base);
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 
 button {
   font: inherit;
