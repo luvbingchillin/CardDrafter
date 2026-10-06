@@ -36,6 +36,13 @@
   --danger-bg: #fee2e2;
   --danger-border: #fca5a5;
   --danger-text: #b91c1c;
+
+  /* MTG Rarity Design Tokens */
+  --rarity-common: #1e293b;
+  --rarity-uncommon: #94a3b8;
+  --rarity-rare: #fbbf24;
+  --rarity-mythic: #f97316;
+  --rarity-mythic-glow: rgba(249, 115, 22, 0.35);
 }
 
 body {

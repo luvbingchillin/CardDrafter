@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { getCardPacks, type Pack } from '../api/pack';
+import { getCardPacks, type Pack, type Card } from '../api/pack';
+import { PackUi } from '../components/PackUi';
 import styles from './PackSimulator.module.css';
+import { useNavigate } from 'react-router-dom';
 
 export function PackSimulator() {
   const [packData, setPackData] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate()
   useEffect(() => {
     const fetchPacks = async () => {
       try {
@@ -39,20 +42,7 @@ export function PackSimulator() {
       </div>
       <div className={styles.packGrid}>
         {packData.map((pack) => (
-          <div key={pack.setCode} className={styles.packCard}>
-            <div className={styles.imageWrapper}>
-              <img
-                src={pack.image}
-                alt={pack.name}
-                className={styles.packImage}
-              />
-            </div>
-            <div className={styles.packInfo}>
-              <p className={styles.packName}>{pack.name}</p>
-              <span className={styles.setCode}>{pack.setCode}</span>
-
-            </div>
-          </div>
+          <PackUi pack={pack} key={pack.setCode} onClick={() => navigate(`/packs/${pack.setCode}`)} />
         ))}
       </div>
     </div>

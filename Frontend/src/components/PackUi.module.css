@@ -1,0 +1,62 @@
+.packCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 16px;
+  padding: 1rem;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.3s ease;
+}
+
+.packCard:hover {
+  transform: translateY(-10px) scale(1.02);
+}
+
+.imageWrapper {
+  width: 100%;
+  max-width: 260px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.packImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 5 / 8.5;
+  object-fit: contain;
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
+  transition: filter 0.3s ease;
+}
+
+.packCard:hover .packImage {
+  filter: drop-shadow(0 20px 35px var(--primary-glow))
+    drop-shadow(0 10px 20px rgba(0, 0, 0, 0.8));
+}
+
+.packInfo {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.setCode {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  color: var(--primary-text);
+}
+
+.packName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}

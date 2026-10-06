@@ -57,6 +57,7 @@ function App() {
       <Routes>
         <Route path="/" element={<PackSimulator />} />
         <Route path="/packs" element={<PackSimulator />} />
+        <Route path="/packs/:setCode" element={<PackOpeningPage />} />
         <Route path="/draft" element={<DraftSimulator />} />
       </Routes>
     </>

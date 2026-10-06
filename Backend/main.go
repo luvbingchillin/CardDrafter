@@ -37,8 +37,11 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
+	cardRepo := repository.NewCardRepository(db)
+	packService := services.NewPackService(cardRepo)
+	packHander := handlers.NewPackHandler(packService)
 
-	router := setupRoutes(authHandler)
+	router := setupRoutes(authHandler, packHander)
 	port := ":8000"
 	fmt.Println("Server listening on http://localhost" + port)
 	if err := http.ListenAndServe(port, router); err != nil {
