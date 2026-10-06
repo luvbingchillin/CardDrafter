@@ -1,22 +1,53 @@
 version: '3.8'
 
 services:
-  # The Go Backend Service
+  # 1. Redis Service
+  redis:
+    image: redis:7-alpine
+    container_name: cardsim-redis
+    ports:
+      - "6379:6379" # Exposes port so GUI tools (like Redis Insight) can connect locally
+    volumes:
+      - redis-data:/data # Persists keys across container restarts
+    restart: unless-stopped
+
+  # 2. Go Backend Service
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      # In Docker, service name 'redis' resolves via Docker DNS to the Redis container
+      - REDIS_ADDR=redis:6379
+      - ANALYTICS_ADDR=http://analytics:8001
+    depends_on:
+      - redis
+      - analytics
     restart: unless-stopped
 
-  # The Frontend + Nginx Service
+  # 3. Python Analytics & Data Science Service
+  analytics:
+    build:
+      context: ./Analytics
+      dockerfile: Dockerfile
+    container_name: cardsim-analytics
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  # 4. Frontend + Nginx Service
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80" # Maps port 80 on your machine to port 80 in Nginx
+      - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
+
+
+volumes:
+  redis-data: # Named volume for Redis snapshot storage (dump.rdb)

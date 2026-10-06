@@ -1,0 +1,6 @@
+{
+  "python.analysis.extraPaths": [
+    "./Analytics"
+  ],
+  "python.defaultInterpreterPath": "C:/Users/kangy/.pyenv/pyenv-win/versions/3.12.10/python.exe"
+}

@@ -34,6 +34,20 @@ func main() {
 	}
 	defer client.Disconnect(context.Background())
 
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	rdb, err := repository.NewRedisClient(redisAddr, "")
+	if err != nil {
+		log.Printf(" Warning: Redis is unavailable (%v). Continuing without cache/draft features.\n", err)
+	} else {
+		defer rdb.Close()
+
+	}
+
+
 	userRepo := repository.NewUserRepository(db)
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -47,4 +61,6 @@ func main() {
 	if err := http.ListenAndServe(port, router); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+
+
 }

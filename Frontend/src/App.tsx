@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { LoginModal } from './components/LoginModal';
 import { PackSimulator } from './pages/PackSimulator';
 import { DraftSimulator } from './pages/DraftSimulator';
+import { PackOpeningPage } from './pages/PackOpeningPage';
 import './App.css';
 function App() {
   const [isAuth, setIsAuth] = useState(false);
