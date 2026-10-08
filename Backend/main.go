@@ -52,7 +52,7 @@ func main() {
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	cardRepo := repository.NewCardRepository(db)
-	packService := services.NewPackService(cardRepo)
+	packService := services.NewPackService(cardRepo, rdb)
 	packHander := handlers.NewPackHandler(packService)
 
 	router := setupRoutes(authHandler, packHander)

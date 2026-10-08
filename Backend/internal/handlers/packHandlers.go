@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backend/internal/services"
+	"backend/internal/utils"
 	"encoding/json"
 	"net/http"
 )
@@ -20,7 +21,16 @@ func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "set code is required", http.StatusBadRequest)
 		return
 	}
-	cards, err:=h.packService.OpenPack(r.Context(), setCode)
+
+	// Extract logged-in user if token cookie is present
+	userID := "anonymous"
+	if cookie, err := r.Cookie("token"); err == nil && cookie != nil {
+		if claims, err := utils.ValidateToken(cookie.Value); err == nil {
+			userID = claims.UserID
+		}
+	}
+
+	cards, err := h.packService.OpenPack(r.Context(), setCode, userID)
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
