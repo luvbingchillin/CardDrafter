@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY app/ ./app
 
-EXPOSE 8001
+EXPOSE 8001 50051
+
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

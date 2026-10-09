@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package analytics;
+
+// Go package option: tells the Go compiler where this generated package lives
+option go_package = "backend/internal/gen/analytics;analytics";
+
+// The RPC Service contract
+service AnalyticsService {
+  rpc CalculatePackEV (EVRequest) returns (EVResponse);
+}
+
+// Represents an individual card fed into the math engine
+message CardData {
+  string scryfall_id = 1;
+  string name = 2;
+  string rarity = 3;
+  double price_usd = 4;
+}
+
+// Request sent from Go to Python
+message EVRequest {
+  string set_code = 1;
+  repeated CardData cards = 2;
+}
+
+// Response returned from Python to Go
+message EVResponse {
+  string set_code = 1;
+  int32 total_cards_analyzed = 2;
+  double average_pack_ev = 3;
+  double mythic_ev = 4;
+  double rare_ev = 5;
+  double uncommon_ev = 6;
+  double common_ev = 7;
+}

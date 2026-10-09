@@ -47,6 +47,19 @@ func main() {
 
 	}
 
+	// 1. Resolve Analytics gRPC Address
+	analyticsAddr := os.Getenv("ANALYTICS_ADDR")
+	if analyticsAddr == "" {
+		analyticsAddr = "localhost:50051"
+	}
+
+	// 2. Initialize gRPC Client
+	analyticsClient, err := services.NewAnalyticsClient(analyticsAddr)
+	if err != nil {
+		log.Printf("Warning: Analytics gRPC unavailable (%v). Continuing without live EV stats.\n", err)
+	} else {
+		defer analyticsClient.Close()
+	}
 
 	userRepo := repository.NewUserRepository(db)
 	authService := services.NewAuthService(userRepo)

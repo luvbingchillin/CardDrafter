@@ -6,9 +6,9 @@ services:
     image: redis:7-alpine
     container_name: cardsim-redis
     ports:
-      - "6379:6379" # Exposes port so GUI tools (like Redis Insight) can connect locally
+      - "6379:6379"
     volumes:
-      - redis-data:/data # Persists keys across container restarts
+      - redis-data:/data
     restart: unless-stopped
 
   # 2. Go Backend Service
@@ -19,9 +19,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # In Docker, service name 'redis' resolves via Docker DNS to the Redis container
       - REDIS_ADDR=redis:6379
-      - ANALYTICS_ADDR=http://analytics:8001
+      - ANALYTICS_ADDR=analytics:50051
     depends_on:
       - redis
       - analytics
@@ -34,7 +33,8 @@ services:
       dockerfile: Dockerfile
     container_name: cardsim-analytics
     ports:
-      - "8001:8001"
+      - "8001:8001"   # FastAPI HTTP docs & health check
+      - "50051:50051" # gRPC binary port
     restart: unless-stopped
 
   # 4. Frontend + Nginx Service
@@ -48,6 +48,5 @@ services:
       - backend
     restart: unless-stopped
 
-
 volumes:
-  redis-data: # Named volume for Redis snapshot storage (dump.rdb)
+  redis-data:
