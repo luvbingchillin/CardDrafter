@@ -15,29 +15,41 @@ import (
 )
 
 
-type PackService struct{
+// PackService coordinates booster pack collation, in-memory set caching, and event streaming.
+type PackService struct {
 	cardRepo *repository.CardRepository
-	rdb *redis.Client
-	cacheMu sync.RWMutex
+	rdb      *redis.Client
+	cacheMu  sync.RWMutex
 	setCache map[string][]*models.Card
 }
 
-
-func NewPackService(cardRepo *repository.CardRepository, rdb *redis.Client) *PackService{
-	return &PackService{cardRepo: cardRepo, rdb: rdb, setCache: make(map[string][]*models.Card)}
+// NewPackService constructs a PackService instance with an empty in-memory set cache.
+func NewPackService(cardRepo *repository.CardRepository, rdb *redis.Client) *PackService {
+	return &PackService{
+		cardRepo: cardRepo,
+		rdb:      rdb,
+		setCache: make(map[string][]*models.Card),
+	}
 }
 
-func (p *PackService) OpenPack(ctx context.Context, setCode string, userID string) ([]*models.Card, error){
+// OpenPack collates a 14-card booster pack using MTG rarity distribution rules:
+// - 1 Rare or Mythic (1:8 chance of upgrading to Mythic)
+// - 3 Uncommons (deduplicated)
+// - 10 Commons (deduplicated)
+// It also publishes a background event to Redis Streams for asynchronous analytics.
+func (p *PackService) OpenPack(ctx context.Context, setCode string, userID string) ([]*models.Card, error) {
 	allCards, err := p.getSetCards(ctx, setCode)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	if len(allCards)==0{
-		return nil, errors.New("No cards found for" + setCode)
+	if len(allCards) == 0 {
+		return nil, errors.New("no cards found for set: " + setCode)
 	}
+
+	// 1. Group set card pool by rarity
 	var c, uc, r, m []*models.Card
-	for _,card := range allCards{
-		switch card.Rarity{
+	for _, card := range allCards {
+		switch card.Rarity {
 		case "common":
 			c = append(c, card)
 		case "uncommon":
@@ -48,18 +60,18 @@ func (p *PackService) OpenPack(ctx context.Context, setCode string, userID strin
 			m = append(m, card)
 		}
 	}
+
+	// 2. Collate pack according to MTG booster slot ratios
 	var pack []*models.Card
 	if len(m) > 0 && rand.IntN(8) == 0 {
 		pack = append(pack, pickUnique(m, 1)...)
 	} else if len(r) > 0 {
 		pack = append(pack, pickUnique(r, 1)...)
 	}
-	// 4. Pick 3 Uncommons without duplicates
 	pack = append(pack, pickUnique(uc, 3)...)
-	// 5. Pick 10 Commons without duplicates
 	pack = append(pack, pickUnique(c, 10)...)
 
-	// Publish analytics event to Redis Stream
+	// 3. Emit asynchronous pack opening event to Redis Streams
 	if userID == "" {
 		userID = "anonymous"
 	}

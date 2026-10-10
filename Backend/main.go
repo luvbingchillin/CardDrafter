@@ -11,49 +11,44 @@ import (
 	"backend/internal/repository"
 	"backend/internal/services"
 
-	"github.com/joho/godotenv" // <-- import godotenv
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load .env file at application startup
 	if err := godotenv.Load(); err != nil {
-		log.Println("Note: No .env file found, reading from system environment")
+		log.Println("Note: No .env file found, using system environment variables")
 	}
 
 	fmt.Println("Starting Card Simulator Backend...")
 
+	// 1. Initialize MongoDB connection
 	mongoURI := os.Getenv("MONGODB_URI")
 	if mongoURI == "" {
 		log.Fatal("MONGODB_URI environment variable is not set!")
 	}
-
-	// Connect to Atlas
 	client, db, err := repository.ConnectDB(mongoURI, "cardsim_db")
 	if err != nil {
 		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer client.Disconnect(context.Background())
 
-
+	// 2. Initialize Redis client (caching & event streams)
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		redisAddr = "localhost:6379"
 	}
 	rdb, err := repository.NewRedisClient(redisAddr, "")
 	if err != nil {
-		log.Printf(" Warning: Redis is unavailable (%v). Continuing without cache/draft features.\n", err)
+		log.Printf("Warning: Redis unavailable (%v). Continuing without cache/stream features.\n", err)
 	} else {
 		defer rdb.Close()
-
 	}
 
-	// 1. Resolve Analytics gRPC Address
+	// 3. Initialize Analytics gRPC client
 	analyticsAddr := os.Getenv("ANALYTICS_ADDR")
 	if analyticsAddr == "" {
 		analyticsAddr = "localhost:50051"
 	}
-
-	// 2. Initialize gRPC Client
 	analyticsClient, err := services.NewAnalyticsClient(analyticsAddr)
 	if err != nil {
 		log.Printf("Warning: Analytics gRPC unavailable (%v). Continuing without live EV stats.\n", err)

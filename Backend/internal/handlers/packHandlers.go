@@ -7,17 +7,21 @@ import (
 	"net/http"
 )
 
-type PackHandler struct{
+// PackHandler handles incoming HTTP requests related to booster pack generation.
+type PackHandler struct {
 	packService *services.PackService
 }
 
-func NewPackHandler(packService *services.PackService) *PackHandler{
+// NewPackHandler constructs a PackHandler instance.
+func NewPackHandler(packService *services.PackService) *PackHandler {
 	return &PackHandler{packService: packService}
 }
 
-func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request){
+// OpenPack handles POST /api/packs/{setCode}/open.
+// It resolves optional user identity from cookies and generates a booster pack.
+func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request) {
 	setCode := r.PathValue("setCode")
-	if setCode == ""{
+	if setCode == "" {
 		http.Error(w, "set code is required", http.StatusBadRequest)
 		return
 	}

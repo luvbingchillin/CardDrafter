@@ -1,4 +1,3 @@
-// Backend/internal/repository/redis.go
 package repository
 
 import (
@@ -10,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// NewRedisClient initializes and validates a Redis connection via a health ping.
 func NewRedisClient(addr string, password string) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,     // e.g. "localhost:6379" or "redis:6379"
