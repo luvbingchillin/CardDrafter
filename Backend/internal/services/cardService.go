@@ -14,7 +14,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-
 // PackService coordinates booster pack collation, in-memory set caching, and event streaming.
 type PackService struct {
 	cardRepo *repository.CardRepository
@@ -116,13 +115,23 @@ func (p *PackService) publishPackOpenedEvent(userID, setCode string, cards []*mo
 		return
 	}
 
+	// 1. Collect both Scryfall IDs and rarities from the generated booster pack
 	cardIDs := make([]string, len(cards))
+	rarities := make([]string, len(cards))
 	for i, c := range cards {
 		cardIDs[i] = c.ScryfallID
+		rarities[i] = c.Rarity
 	}
+
 	cardIDsJSON, err := json.Marshal(cardIDs)
 	if err != nil {
 		log.Printf("Warning: failed to serialize card IDs for stream: %v", err)
+		return
+	}
+
+	raritiesJSON, err := json.Marshal(rarities)
+	if err != nil {
+		log.Printf("Warning: failed to serialize rarities for stream: %v", err)
 		return
 	}
 
@@ -138,6 +147,7 @@ func (p *PackService) publishPackOpenedEvent(userID, setCode string, cards []*mo
 				"user_id":    userID,
 				"set_code":   setCode,
 				"card_ids":   string(cardIDsJSON),
+				"rarities":   string(raritiesJSON), // <--- New Fat Event field!
 				"card_count": len(cards),
 				"opened_at":  time.Now().UTC().Format(time.RFC3339),
 			},
@@ -147,4 +157,5 @@ func (p *PackService) publishPackOpenedEvent(userID, setCode string, cards []*mo
 			log.Printf("Warning: failed to publish pack opening to Redis stream: %v", err)
 		}
 	}()
-}
+
+}

@@ -6,3 +6,6 @@ numpy>=1.26.0
 python-dotenv>=1.0.0
 grpcio>=1.62.0
 grpcio-tools>=1.62.0
+redis>=5.0.0
+pymongo>=4.6.0
+

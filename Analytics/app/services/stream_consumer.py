@@ -4,6 +4,16 @@ import os
 import threading
 import time
 import redis
+from datetime import datetime, timezone
+from pymongo import MongoClient
+import pandas as pd
+
+def init_mongo():
+    """Initializes and returns a PyMongo database handle."""
+    mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    client = MongoClient(mongo_uri)
+    return client["cardsim_db"]
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,25 +48,77 @@ def setup_consumer_group(r: redis.Redis) -> None:
 
 def process_batch(events: list) -> None:
     """
-    Parses and deserializes a batch of raw Redis Stream messages.
-
-    Args:
-        events: List of (message_id, field_dict) tuples returned by XREADGROUP.
+    Parses a batch of Redis Stream events, aggregates pull counts using Pandas,
+    and updates lifetime statistics in MongoDB.
     """
+    if not events:
+        return
+    db = init_mongo()
     records = []
+    audit_logs = []
+    # 1. Parse and deserialize the raw Redis string fields
     for message_id, data in events:
         card_ids = json.loads(data.get("card_ids", "[]"))
-        records.append({
+        rarities = json.loads(data.get("rarities", "[]"))
+        set_code = data.get("set_code", "UNKNOWN")
+        user_id = data.get("user_id", "ANONYMOUS")
+        opened_at = data.get("opened_at", datetime.now(timezone.utc).isoformat())
+        # For the raw audit log collection
+        audit_logs.append({
             "message_id": message_id,
-            "user_id": data.get("user_id"),
-            "set_code": data.get("set_code"),
+            "user_id": user_id,
+            "set_code": set_code,
             "card_count": int(data.get("card_count", 0)),
-            "opened_at": data.get("opened_at"),
+            "opened_at": opened_at,
             "card_ids": card_ids,
+            "rarities": rarities,
         })
+        # For the Pandas aggregation
+        for rarity in rarities:
+            records.append({
+                "set_code": set_code,
+                "rarity": rarity.lower(),
+            })
+    # 2. Insert raw historical rolls into 'roll_logs'
+    if audit_logs:
+        db["roll_logs"].insert_many(audit_logs)
+    # 3. Aggregate rarity counts per set using Pandas
+    if records:
+        df = pd.DataFrame(records)
+        # Count occurrences of each rarity per set_code
+        # This produces a pivot table with columns: common, uncommon, rare, mythic
+        rarity_counts = (
+            df.groupby(["set_code", "rarity"])
+            .size()
+            .unstack(fill_value=0)
+        )
+        # 4. Count total packs opened per set in this batch
+        packs_df = pd.DataFrame(audit_logs)
+        packs_per_set = packs_df["set_code"].value_counts().to_dict()
+        # 5. Atomically increment ($inc) lifetime counters in MongoDB
+        for set_code, pack_count in packs_per_set.items():
+            mythics = int(rarity_counts.loc[set_code].get("mythic", 0)) if set_code in rarity_counts.index else 0
+            rares = int(rarity_counts.loc[set_code].get("rare", 0)) if set_code in rarity_counts.index else 0
+            uncommons = int(rarity_counts.loc[set_code].get("uncommon", 0)) if set_code in rarity_counts.index else 0
+            commons = int(rarity_counts.loc[set_code].get("common", 0)) if set_code in rarity_counts.index else 0
+            db["set_analytics"].update_one(
+                {"set_code": set_code},
+                {
+                    "$inc": {
+                        "total_packs_opened": pack_count,
+                        "mythic_count": mythics,
+                        "rare_count": rares,
+                        "uncommon_count": uncommons,
+                        "common_count": commons,
+                    },
+                    "$set": {
+                        "last_updated": datetime.now(timezone.utc),
+                    },
+                },
+                upsert=True,
+            )
+    logger.info(f"Successfully processed batch of {len(audit_logs)} pack open events.")
 
-    logger.info(f"Processing batch of {len(records)} pack open events")
-    # TODO: Ingest records into Pandas DataFrame or persist aggregates to MongoDB.
 
 
 def run_stream_consumer(stop_event: threading.Event) -> None:
