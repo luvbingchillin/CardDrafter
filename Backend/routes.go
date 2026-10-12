@@ -5,7 +5,11 @@ import (
 	"net/http"
 )
 
-func setupRoutes(authHandler *handlers.AuthHandler, packHandler *handlers.PackHandler) http.Handler {
+func setupRoutes(
+	authHandler *handlers.AuthHandler,
+	packHandler *handlers.PackHandler,
+	analyticsHandler *handlers.AnalyticsHandler,
+) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /api/packs", handlers.GetPacks)
 	router.HandleFunc("POST /api/auth/login", authHandler.Login)
@@ -13,5 +17,7 @@ func setupRoutes(authHandler *handlers.AuthHandler, packHandler *handlers.PackHa
 	router.HandleFunc("GET /api/auth/google/callback", authHandler.HandleGoogleCallback)
 	router.HandleFunc("GET /api/auth/google", authHandler.HandleGoogleLogin)
 	router.HandleFunc("POST /api/packs/{setCode}/open", packHandler.OpenPack)
+	router.HandleFunc("GET /api/packs/{setCode}/analytics", analyticsHandler.GetSetAnalytics)
+
 	return router
 }

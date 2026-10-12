@@ -23,6 +23,26 @@ export interface Card {
   colors?: string[];
 }
 
+export interface SetAnalytics {
+  id?: string;
+  set_code: string;
+  total_packs_opened: number;
+  mythic_count: number;
+  rare_count: number;
+  uncommon_count: number;
+  common_count: number;
+  last_updated?: string;
+}
+
+export async function getSetAnalytics(setCode: string): Promise<SetAnalytics> {
+  const res = await fetch(`/api/packs/${setCode}/analytics`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Failed to fetch set analytics');
+  }
+  return res.json();
+}
+
 
 export async function getCardPacks(): Promise<Pack[]> {
   const res = await fetch('/api/packs');
