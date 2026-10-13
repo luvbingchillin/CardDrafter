@@ -1,6 +1,8 @@
 .env
 /.agents
 /docs
+go-learnings.md
+.agents/go-learnings.md
 # Python Bytecode
 __pycache__/
 *.pyc

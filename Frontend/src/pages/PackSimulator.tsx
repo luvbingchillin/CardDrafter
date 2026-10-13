@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCardPacks, type Pack, type Card } from '../api/pack';
+import { getCardPacks, type Pack } from '../api/pack';
 import { PackUi } from '../components/PackUi';
 import styles from './PackSimulator.module.css';
 import { useNavigate } from 'react-router-dom';
