@@ -21,11 +21,23 @@ const (
 	maxMessageSize = 512
 )
 
+type Room struct {
+	unregister chan *Client
+	actionChan chan PlayerAction
+}
+
 type Client struct {
+	room *Room
 	conn   *websocket.Conn
 	sendCh chan []byte
 	userID string
 }
+
+type PlayerAction struct {
+	UserID  string
+	Payload []byte // The raw JSON message from the client (e.g. {"type":"PICK_CARD","card_id":"..."})
+}
+
 
 
 // writePump pumps messages from the sendCh to the websocket connection.
@@ -59,6 +71,44 @@ func (c *Client) writePump() {
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return // Client didn't respond or socket broken! Kill goroutine
 			}
+		}
+	}
+}
+
+
+// readPump pumps incoming messages from the websocket connection to the room's action channel.
+// Exactly ONE readPump goroutine runs per active connection.
+func (c *Client) readPump() {
+	defer func() {
+		// When the connection dies, notify the room to unregister this client!
+		c.room.unregister <- c
+		c.conn.Close()
+	}()
+
+	// 1. Defend against malicious clients sending giant payloads (max 512 bytes)
+	c.conn.SetReadLimit(maxMessageSize)
+
+	// 2. Set the initial read deadline to 60 seconds from now
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+
+	// 3. Every time the browser replies with a Pong, push the deadline back another 60s!
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	// 4. Infinite read loop
+	for {
+		_, message, err := c.conn.ReadMessage()
+		if err != nil {
+			// Normal disconnects (e.g. closing the browser tab) trigger an error here
+			break // Exits loop, triggering the defer cleanup above
+		}
+
+		// Forward the player's action into the room's central channel!
+		c.room.actionChan <- PlayerAction{
+			UserID:  c.userID,
+			Payload: message,
 		}
 	}
 }

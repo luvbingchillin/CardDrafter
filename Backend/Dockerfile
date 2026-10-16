@@ -20,8 +20,6 @@ WORKDIR /app
 
 # Copy only the compiled binary from Stage 1
 COPY --from=builder /app/server .
-# Copy .env file so Go can read MongoDB URI and secrets
-COPY .env .
 
 EXPOSE 8000
 

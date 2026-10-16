@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"backend/internal/middleware"
 	"backend/internal/models"
 	"backend/internal/services"
 	"backend/internal/utils"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -66,7 +69,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	response, err := h.authService.Register(r.Context(), req)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 	} else {
 		token, err := utils.GenerateToken(response.User.ID)
@@ -82,12 +85,43 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
-	state := "random-csrf-token"
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		http.Error(w, "Failed to generate security state", http.StatusInternalServerError)
+		return
+	}
+	state := hex.EncodeToString(b)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   600, // 10 minutes
+	})
+
 	url := h.googleOAuthConfig.AuthCodeURL(state)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	stateCookie, err := r.Cookie("oauth_state")
+	if err != nil || stateCookie == nil || stateCookie.Value == "" || stateCookie.Value != r.URL.Query().Get("state") {
+		http.Error(w, "Invalid or expired OAuth state token", http.StatusBadRequest)
+		return
+	}
+
+	// Invalidate state cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+
 	code := r.URL.Query().Get("code")
 
 	token, err := h.googleOAuthConfig.Exchange(r.Context(), code)
@@ -111,7 +145,7 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	}
 	json.NewDecoder(resp.Body).Decode(&googleUser)
 
-	// 4. Delegate to AuthService: Find existing user or register new user
+	// Delegate to AuthService: Find existing user or register new user
 	user, err := h.authService.ProcessGoogleUser(r.Context(), googleUser.ID, googleUser.Email, googleUser.Name)
 	if err != nil {
 		http.Error(w, "Authentication failed", http.StatusInternalServerError)
@@ -124,8 +158,12 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		setAuthCookie(w, jwtoken)
 	}
 
-	http.Redirect(w, r, "http://localhost:5173/?auth=success", http.StatusSeeOther)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
 
+	http.Redirect(w, r, frontendURL+"/?auth=success", http.StatusSeeOther)
 }
 
 func setAuthCookie(w http.ResponseWriter, token string) {
@@ -139,3 +177,33 @@ func setAuthCookie(w http.ResponseWriter, token string) {
 		MaxAge:   3600 * 24 * 7,        // 7 days in seconds
 	})
 }
+
+// GetMe retrieves the currently logged in user's profile from the auth context.
+func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	summary, err := h.authService.GetUserByID(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(summary)
+}
+
+// Logout clears the authentication cookie.
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+}
+

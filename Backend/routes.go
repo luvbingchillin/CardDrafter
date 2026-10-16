@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/internal/handlers"
+	"backend/internal/middleware"
 	"net/http"
 )
 
@@ -14,8 +15,10 @@ func setupRoutes(
 	router.HandleFunc("GET /api/packs", handlers.GetPacks)
 	router.HandleFunc("POST /api/auth/login", authHandler.Login)
 	router.HandleFunc("POST /api/auth/register", authHandler.Register)
+	router.HandleFunc("POST /api/auth/logout", authHandler.Logout)
 	router.HandleFunc("GET /api/auth/google/callback", authHandler.HandleGoogleCallback)
 	router.HandleFunc("GET /api/auth/google", authHandler.HandleGoogleLogin)
+	router.Handle("GET /api/auth/me", middleware.AuthMiddleware(http.HandlerFunc(authHandler.GetMe)))
 	router.HandleFunc("POST /api/packs/{setCode}/open", packHandler.OpenPack)
 	router.HandleFunc("GET /api/packs/{setCode}/analytics", analyticsHandler.GetSetAnalytics)
 

@@ -108,8 +108,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               <div className={styles.socialRow}>
                 <button
                   onClick={() => {
-                    window.location.href =
-                      'http://localhost:8000/api/auth/google';
+                    window.location.href = '/api/auth/google';
                   }}
                   type="button"
                   className={styles.iconOnlyButton}
@@ -179,8 +178,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               <div className={styles.socialRow}>
                 <button
                   onClick={() => {
-                    window.location.href =
-                      'http://localhost:8000/api/auth/google';
+                    window.location.href = '/api/auth/google';
                   }}
                   type="button"
                   className={styles.iconOnlyButton}

@@ -96,3 +96,16 @@ func (s *AuthService) ProcessGoogleUser(ctx context.Context, googleID, email, na
 
 	return newUser, nil
 }
+
+func (s *AuthService) GetUserByID(ctx context.Context, id string) (*models.UserSummary, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found")
+	}
+	return &models.UserSummary{
+		ID:       user.ID.Hex(),
+		Username: user.Username,
+		Email:    user.Email,
+	}, nil
+}
+

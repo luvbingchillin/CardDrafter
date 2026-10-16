@@ -8,11 +8,15 @@ from datetime import datetime, timezone
 from pymongo import MongoClient
 import pandas as pd
 
-def init_mongo():
-    """Initializes and returns a PyMongo database handle."""
-    mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    client = MongoClient(mongo_uri)
-    return client["cardsim_db"]
+_mongo_client: MongoClient | None = None
+
+def get_mongo_db():
+    """Returns a singleton PyMongo database handle, reusing the client connection pool."""
+    global _mongo_client
+    if _mongo_client is None:
+        mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+        _mongo_client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    return _mongo_client["cardsim_db"]
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +57,7 @@ def process_batch(events: list) -> None:
     """
     if not events:
         return
-    db = init_mongo()
+    db = get_mongo_db()
     records = []
     audit_logs = []
     # 1. Parse and deserialize the raw Redis string fields

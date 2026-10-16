@@ -60,7 +60,8 @@ export async function openPack(setCode: string): Promise<Card[]> {
     headers: {
       'Content-type': 'application/json',
     },
-  })
+    credentials: 'include',
+  });
   if (!res.ok) {
     const errorText = await res.text();
     throw new Error(errorText || 'Failed to fetch card packs');

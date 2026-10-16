@@ -85,3 +85,20 @@ func (r *UserRepository) FindByGoogleId(ctx context.Context, googID string) (*mo
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*models.User, error) {
+	oid, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	var user models.User
+	err = r.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+

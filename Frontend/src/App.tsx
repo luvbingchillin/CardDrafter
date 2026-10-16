@@ -5,21 +5,24 @@ import { LoginModal } from './components/LoginModal';
 import { PackSimulator } from './pages/PackSimulator';
 import { DraftSimulator } from './pages/DraftSimulator';
 import { PackOpeningPage } from './pages/PackOpeningPage';
+import { getMe } from './api/auth';
 import './App.css';
-function App() {
-  const [isAuth, setIsAuth] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
 
+function App() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isAuth, setIsAuth] = useState(() => searchParams.get('auth') === 'success');
   const [loginPopup, SetLoginPopup] = useState(false);
 
   useEffect(() => {
-    // If returning from Google OAuth redirect:
     if (searchParams.get('auth') === 'success') {
-      setIsAuth(true);
-      // Clean up the URL by removing "?auth=success"
-      setSearchParams({});
+      setSearchParams({}, { replace: true });
     }
-  }, [searchParams]);
+    getMe().then((user) => {
+      if (user) {
+        setIsAuth(true);
+      }
+    });
+  }, [searchParams, setSearchParams]);
   return (
     <>
       <header className="header">
