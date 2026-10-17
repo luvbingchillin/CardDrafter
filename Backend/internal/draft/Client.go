@@ -21,10 +21,6 @@ const (
 	maxMessageSize = 512
 )
 
-type Room struct {
-	unregister chan *Client
-	actionChan chan PlayerAction
-}
 
 type Client struct {
 	room *Room

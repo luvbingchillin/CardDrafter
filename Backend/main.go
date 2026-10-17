@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"backend/internal/draft"
 	"backend/internal/handlers"
 	"backend/internal/repository"
 	"backend/internal/services"
@@ -57,17 +58,18 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
+	cardRepo := repository.NewCardRepository(db)
 	analyticsRepo := repository.NewAnalyticsRepository(db)
+
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
-	cardRepo := repository.NewCardRepository(db)
 	packService := services.NewPackService(cardRepo, rdb)
 	packHander := handlers.NewPackHandler(packService)
-	
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsRepo)
+	draftHub := draft.NewHub()
+	draftHandler := draft.NewDraftHandler(draftHub)
 
-
-	router := setupRoutes(authHandler, packHander, analyticsHandler)
+	router := setupRoutes(authHandler, packHander, analyticsHandler, draftHandler)
 	port := ":8000"
 	fmt.Println("Server listening on http://localhost" + port)
 	if err := http.ListenAndServe(port, router); err != nil {
