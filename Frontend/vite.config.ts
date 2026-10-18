@@ -9,6 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000', // Points to your Go Backend
         changeOrigin: true,
+        ws: true,
       },
     },
   },
