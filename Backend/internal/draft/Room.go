@@ -8,6 +8,11 @@ import (
 
 type DraftState string
 
+type ActionEnvelope struct {
+    Type string `json:"type"`
+}
+
+
 const (
     StateLobby    DraftState = "LOBBY"
     StateDrafting DraftState = "DRAFTING"
@@ -77,15 +82,7 @@ func (r *Room) Run() {
 		}
 
 		// 3. Broadcast the updated lobby state to everyone!
-		r.broadcast(WSMessage{
-			Type: "LOBBY_UPDATE",
-			Payload: map[string]any{
-				"hostId":   r.hostID,
-				"seats":    r.seats,
-				"packSets": r.packSets,
-				"state":    r.state,
-			},
-		})
+		r.broadcastLobbyUpdate()
 
 		case client := <-r.unregister:
 			if _, ok := r.clients[client]; ok {
@@ -99,19 +96,28 @@ func (r *Room) Run() {
 				}
 
 				// Broadcast the update so other players see who went offline
-				r.broadcast(WSMessage{
-					Type: "LOBBY_UPDATE",
-					Payload: map[string]any{
-						"hostId":   r.hostID,
-						"seats":    r.seats,
-						"packSets": r.packSets,
-						"state":    r.state,
-					},
-				})
+				r.broadcastLobbyUpdate()
 			}
 
 		case action := <-r.actionChan:
 			log.Printf("Draft room %s received action from player:%s:%s", r.id, action.UserID, string(action.Payload))
+			envelope := ActionEnvelope{Type:""}
+			err:=json.Unmarshal(action.Payload, &envelope)
+			if err!=nil {
+				log.Printf("Error occured")
+				continue
+			} else if r.state == StateLobby {
+				switch envelope.Type {
+				case "TOGGLE_READY":
+					seat := r.findSeat(action.UserID)
+					if seat != nil{
+						seat.IsReady = !seat.IsReady
+						r.broadcastLobbyUpdate()
+					}
+				default:
+					log.Printf("unknown input %s", envelope.Type)
+				}
+			}
 		}
 	}
 
@@ -140,3 +146,17 @@ func (r *Room) findSeat(userID string) *Seat {
 	}
 	return nil // Not found
 }
+
+
+func (r *Room) broadcastLobbyUpdate(){
+	r.broadcast(WSMessage{
+		Type: "LOBBY_UPDATE",
+		Payload: map[string]any{
+			"hostId":   r.hostID,
+			"seats":    r.seats,
+			"packSets": r.packSets,
+			"state":    r.state,
+		},
+	})
+}
+
