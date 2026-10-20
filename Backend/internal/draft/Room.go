@@ -13,6 +13,13 @@ type ActionEnvelope struct {
 }
 
 
+type SetPackSetsMessage struct {
+    Payload struct {
+        PackSets []string `json:"packSets"`
+    } `json:"payload"`
+}
+
+
 const (
     StateLobby    DraftState = "LOBBY"
     StateDrafting DraftState = "DRAFTING"
@@ -112,6 +119,41 @@ func (r *Room) Run() {
 					seat := r.findSeat(action.UserID)
 					if seat != nil{
 						seat.IsReady = !seat.IsReady
+						r.broadcastLobbyUpdate()
+					}
+				case "SET_PACK_SETS":
+					var setStore SetPackSetsMessage
+					if action.UserID == r.hostID{
+						err:=json.Unmarshal(action.Payload, &setStore)
+						if err!=nil || len(setStore.Payload.PackSets)==0{
+							log.Printf("Error occured")
+							break
+						}
+						r.packSets = setStore.Payload.PackSets
+						r.broadcastLobbyUpdate()
+					}
+				case "START_DRAFT":
+					if action.UserID != r.hostID{
+						log.Print("Not host")
+						break
+					}
+					if r.state != StateLobby{
+						log.Print("Invalid lobby state")
+						break
+					}
+					if len(r.packSets) == 0 { log.Print("No packs configured"); break }
+					valid:=true
+					for _,seat:=range r.seats{
+						if seat.Client!=nil{
+							if !seat.IsReady{
+								log.Print("User not ready")
+								valid = false
+								break
+							}
+						}
+					}
+					if valid && len(r.seats)>0{
+						r.state = StateDrafting
 						r.broadcastLobbyUpdate()
 					}
 				default:
