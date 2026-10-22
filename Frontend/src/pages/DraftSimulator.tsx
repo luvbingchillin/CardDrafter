@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Form } from "react-router-dom";
 import { getMe } from "../api/auth";
 export interface Seat {
   Index: number;
@@ -38,12 +37,12 @@ export function DraftSimulator() {
   const wsUrl = `${protocol}//${window.location.host}/api/draft/${roomId}/ws`;
   const isHost = Boolean(lobbyState && currentUser && lobbyState.hostId === currentUser);
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const curRoomIdInput = event.target.value
     setRoomIdInput(curRoomIdInput)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setRoomId(roomIdInput)
   }

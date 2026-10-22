@@ -66,7 +66,7 @@ func main() {
 	packService := services.NewPackService(cardRepo, rdb)
 	packHander := handlers.NewPackHandler(packService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsRepo)
-	draftHub := draft.NewHub()
+	draftHub := draft.NewHub(packService)
 	draftHandler := draft.NewDraftHandler(draftHub)
 
 	router := setupRoutes(authHandler, packHander, analyticsHandler, draftHandler)

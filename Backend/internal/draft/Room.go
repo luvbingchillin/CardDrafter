@@ -1,6 +1,8 @@
 package draft
 
 import (
+	"backend/internal/models"
+	"context"
 	"encoding/json"
 	"log"
 )
@@ -12,6 +14,11 @@ type ActionEnvelope struct {
     Type string `json:"type"`
 }
 
+type PickCardMessage struct {
+	Payload struct {
+		CardID string `json:"cardId"`
+	} `json:"payload"`
+}
 
 type SetPackSetsMessage struct {
     Payload struct {
@@ -19,6 +26,10 @@ type SetPackSetsMessage struct {
     } `json:"payload"`
 }
 
+
+type PackOpener interface {
+	OpenPack(ctx context.Context, setCode string, userID string) ([]*models.Card, error)
+}
 
 const (
     StateLobby    DraftState = "LOBBY"
@@ -35,7 +46,10 @@ type Seat struct{
 	Index int
 	UserID string
 	IsReady bool
-	Client *Client
+	Client *Client `josn:"-"`
+	CurrentPack []*models.Card `josn:"-"`
+	PackQueue   [][]*models.Card `josn:"-"`
+	DraftedPool []*models.Card `josn:"-"`
 }
 
 type Room struct {
@@ -48,9 +62,11 @@ type Room struct {
 	hostID string
 	packSets []string
 	seats []*Seat
+	packService PackOpener
+	currentRound int
 }
 
-func NewRoom(id string) *Room {
+func NewRoom(id string, packService PackOpener) *Room {
     return &Room{
         id:         id,
         state:      StateLobby,
@@ -60,8 +76,11 @@ func NewRoom(id string) *Room {
         register:   make(chan *Client),
         unregister: make(chan *Client),
         actionChan: make(chan PlayerAction, 64),
+		packService: packService,
+		currentRound: 0,
     }
 }
+
 
 
 func (r *Room) Run() {
@@ -154,11 +173,31 @@ func (r *Room) Run() {
 					}
 					if valid && len(r.seats)>0{
 						r.state = StateDrafting
+						r.currentRound = 0
+						currentSet := r.packSets[r.currentRound]
+						for _,seat:=range r.seats{
+							pack, err:= r.packService.OpenPack(context.Background(), currentSet, seat.UserID)
+							if err != nil{
+								log.Print("Invalid pack")
+							}
+							seat.CurrentPack = pack
+							seat.PackQueue = make([][]*models.Card, 0)
+							seat.DraftedPool = make([]*models.Card, 0)
+							r.sendDraftUpdate(seat)
+						}
 						r.broadcastLobbyUpdate()
 					}
 				default:
 					log.Printf("unknown input %s", envelope.Type)
 				}
+			} else if r.state == StateDrafting {
+				seat := r.findSeat(action.UserID)
+				if seat==nil || len(seat.CurrentPack)>0{
+					log.Print("Invalid seat")
+					break
+				}
+				for 
+
 			}
 		}
 	}
@@ -202,3 +241,35 @@ func (r *Room) broadcastLobbyUpdate(){
 	})
 }
 
+func (r *Room) sendToClient(client *Client, msg WSMessage){
+	if client == nil{
+		return
+	}
+	message, err := json.Marshal(msg)
+	if err!=nil{
+		log.Printf("Invalid message %s", err)
+		return 
+	}
+	select {
+	case client.sendCh <- message:
+	default:
+		log.Printf("Warning: Client %s buffer full; dropped message", client.userID)
+	}
+}
+
+
+func (r *Room) sendDraftUpdate(seat *Seat){
+	if seat.Client == nil{
+		return
+	}
+	r.sendToClient(seat.Client, WSMessage{
+		Type: "DRAFT_UPDATE",
+		Payload: map[string]any{
+            "round":       r.currentRound + 1,
+            "totalRounds": len(r.packSets),
+            "currentPack": seat.CurrentPack,
+            "draftedPool": seat.DraftedPool,
+            "queueCount":  len(seat.PackQueue),
+		},
+	})
+}

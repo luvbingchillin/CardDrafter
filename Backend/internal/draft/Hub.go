@@ -8,10 +8,11 @@ import (
 type Hub struct {
 	mu sync.RWMutex
 	rooms map[string]*Room
+	packService PackOpener
 }
 
-func NewHub() *Hub{
-	return &Hub{rooms:make(map[string]*Room)}
+func NewHub(packService PackOpener) *Hub{
+	return &Hub{packService:packService, rooms:make(map[string]*Room)}
 }
 
 func (h *Hub) GetOrCreateRoom(id string,) *Room{
@@ -21,7 +22,7 @@ func (h *Hub) GetOrCreateRoom(id string,) *Room{
 		log.Printf("Room with id %s already exists", id)
 		return h.rooms[id]
 	} else {
-		room := NewRoom(id)
+		room := NewRoom(id, h.packService)
 		h.rooms[id] = room
 		go room.Run()
 		return room
