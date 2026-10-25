@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 
@@ -46,10 +48,10 @@ type Seat struct{
 	Index int
 	UserID string
 	IsReady bool
-	Client *Client `josn:"-"`
-	CurrentPack []*models.Card `josn:"-"`
-	PackQueue   [][]*models.Card `josn:"-"`
-	DraftedPool []*models.Card `josn:"-"`
+	Client *Client `json:"-"`
+	CurrentPack []*models.Card `json:"-"`
+	PackQueue   [][]*models.Card `json:"-"`
+	DraftedPool []*models.Card `json:"-"`
 }
 
 type Room struct {
@@ -192,16 +194,19 @@ func (r *Room) Run() {
 				}
 			} else if r.state == StateDrafting {
 				seat := r.findSeat(action.UserID)
-				if seat==nil || len(seat.CurrentPack)>0{
-					log.Print("Invalid seat")
-					break
+				if seat == nil || len(seat.CurrentPack) == 0 {
+					log.Print("Invalid seat or empty pack")
+					continue
 				}
-				for 
-
+				switch envelope.Type {
+				case "PICK_CARD":
+					r.handlePickCard(seat, action.Payload)
+				default:
+					log.Printf("unknown input %s", envelope.Type)
+				}
 			}
 		}
 	}
-
 }
 
 func (r *Room) broadcast(msg WSMessage){
@@ -273,3 +278,111 @@ func (r *Room) sendDraftUpdate(seat *Seat){
 		},
 	})
 }
+
+func (r *Room) getNeighborSeat(currentIndex int) *Seat {
+	total := len(r.seats)
+	if total == 0 {
+		return nil
+	}
+	var neighborIndex int
+	if r.currentRound%2 == 0 {
+		// Round 0 (Pack 1), Round 2 (Pack 3): Pass Left (Clockwise)
+		neighborIndex = (currentIndex + 1) % total
+	} else {
+		// Round 1 (Pack 2): Pass Right (Counter-Clockwise)
+		neighborIndex = (currentIndex - 1 + total) % total
+	}
+	return r.seats[neighborIndex]
+}
+
+func (r *Room) passPack(fromSeat *Seat, pack []*models.Card) {
+	if len(pack) == 0 {
+		return // Pack is exhausted; last card was drafted
+	}
+	neighbor := r.getNeighborSeat(fromSeat.Index)
+	if neighbor == nil {
+		return
+	}
+	if len(neighbor.CurrentPack) == 0 {
+		neighbor.CurrentPack = pack
+	} else {
+		neighbor.PackQueue = append(neighbor.PackQueue, pack)
+	}
+	r.sendDraftUpdate(neighbor)
+}
+
+func (r *Room) advanceSeatPack(seat *Seat) {
+	if len(seat.PackQueue) > 0 {
+		seat.CurrentPack = seat.PackQueue[0]
+		seat.PackQueue = seat.PackQueue[1:]
+	} else {
+		seat.CurrentPack = nil
+	}
+	r.sendDraftUpdate(seat)
+}
+
+func (r *Room) checkRoundCompletion() {
+	for _, s := range r.seats {
+		if len(s.CurrentPack) > 0 || len(s.PackQueue) > 0 {
+			return // Still drafting this round
+		}
+	}
+
+	// All players finished drafting their packs for this round!
+	r.currentRound++
+	if r.currentRound < len(r.packSets) {
+		currentSet := r.packSets[r.currentRound]
+		for _, s := range r.seats {
+			pack, err := r.packService.OpenPack(context.Background(), currentSet, s.UserID)
+			if err != nil {
+				log.Printf("Error opening pack for seat %d: %v", s.Index, err)
+			}
+			s.CurrentPack = pack
+			s.PackQueue = make([][]*models.Card, 0)
+			r.sendDraftUpdate(s)
+		}
+		r.broadcastLobbyUpdate()
+	} else {
+		r.state = StateFinished
+		r.broadcastLobbyUpdate()
+	}
+}
+
+func (r *Room) handlePickCard(seat *Seat, payload []byte) {
+	var msg PickCardMessage
+	if err := json.Unmarshal(payload, &msg); err != nil || msg.Payload.CardID == "" {
+		log.Print("Invalid card payload")
+		return
+	}
+
+	cardID, err := bson.ObjectIDFromHex(msg.Payload.CardID)
+	if err != nil {
+		log.Print("Unable to convert object from hex")
+		return
+	}
+
+	cardFound := false
+	for i, card := range seat.CurrentPack {
+		if card.ID == cardID {
+			seat.DraftedPool = append(seat.DraftedPool, card)
+			seat.CurrentPack = append(seat.CurrentPack[:i], seat.CurrentPack[i+1:]...)
+			cardFound = true
+			break
+		}
+	}
+
+	if !cardFound {
+		log.Printf("Card %s not found in current pack for seat %d", msg.Payload.CardID, seat.Index)
+		return
+	}
+
+	// 1. Pass remaining cards in the pack to the neighbor
+	passedPack := seat.CurrentPack
+	r.passPack(seat, passedPack)
+
+	// 2. Advance the current player to their next pack (or nil/waiting)
+	r.advanceSeatPack(seat)
+
+	// 3. Check if all seats have finished this pack round
+	r.checkRoundCompletion()
+}
