@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -52,6 +53,7 @@ type Seat struct{
 	CurrentPack []*models.Card `json:"-"`
 	PackQueue   [][]*models.Card `json:"-"`
 	DraftedPool []*models.Card `json:"-"`
+	TimeReamining int
 }
 
 type Room struct {
@@ -86,8 +88,16 @@ func NewRoom(id string, packService PackOpener) *Room {
 
 
 func (r *Room) Run() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
+		case <-ticker.C:
+			if r.state == StateDrafting {
+				r.handleTick()
+			}
+
 		case client := <-r.register:
 		r.clients[client] = true
 
@@ -183,6 +193,7 @@ func (r *Room) Run() {
 								log.Print("Invalid pack")
 							}
 							seat.CurrentPack = pack
+							seat.TimeReamining = 15 + len(pack)*2
 							seat.PackQueue = make([][]*models.Card, 0)
 							seat.DraftedPool = make([]*models.Card, 0)
 							r.sendDraftUpdate(seat)
@@ -314,6 +325,7 @@ func (r *Room) passPack(fromSeat *Seat, pack []*models.Card) {
 func (r *Room) advanceSeatPack(seat *Seat) {
 	if len(seat.PackQueue) > 0 {
 		seat.CurrentPack = seat.PackQueue[0]
+		seat.TimeReamining = 15 + len(seat.CurrentPack)*2
 		seat.PackQueue = seat.PackQueue[1:]
 	} else {
 		seat.CurrentPack = nil
@@ -338,6 +350,7 @@ func (r *Room) checkRoundCompletion() {
 				log.Printf("Error opening pack for seat %d: %v", s.Index, err)
 			}
 			s.CurrentPack = pack
+			s.TimeReamining = 15 + len(s.CurrentPack)*2
 			s.PackQueue = make([][]*models.Card, 0)
 			r.sendDraftUpdate(s)
 		}
@@ -364,8 +377,7 @@ func (r *Room) handlePickCard(seat *Seat, payload []byte) {
 	cardFound := false
 	for i, card := range seat.CurrentPack {
 		if card.ID == cardID {
-			seat.DraftedPool = append(seat.DraftedPool, card)
-			seat.CurrentPack = append(seat.CurrentPack[:i], seat.CurrentPack[i+1:]...)
+			r.excutePick(seat, i)
 			cardFound = true
 			break
 		}
@@ -375,14 +387,26 @@ func (r *Room) handlePickCard(seat *Seat, payload []byte) {
 		log.Printf("Card %s not found in current pack for seat %d", msg.Payload.CardID, seat.Index)
 		return
 	}
+}
 
-	// 1. Pass remaining cards in the pack to the neighbor
-	passedPack := seat.CurrentPack
-	r.passPack(seat, passedPack)
 
-	// 2. Advance the current player to their next pack (or nil/waiting)
+func (r *Room) handleTick(){
+	for _,seat:=range r.seats{
+		if len(seat.CurrentPack)>0{
+			seat.TimeReamining-=1
+			if seat.TimeReamining<=0{
+				r.excutePick(seat, 0)
+
+			}
+		}
+	}
+}
+
+func (r *Room) excutePick(seat *Seat, cardIndex int){
+	card := seat.CurrentPack[cardIndex]
+	seat.DraftedPool = append(seat.DraftedPool, card)
+	seat.CurrentPack = append(seat.CurrentPack[:cardIndex], seat.CurrentPack[cardIndex+1:]...)
+	r.passPack(seat, seat.CurrentPack)
 	r.advanceSeatPack(seat)
-
-	// 3. Check if all seats have finished this pack round
 	r.checkRoundCompletion()
-}
+}
