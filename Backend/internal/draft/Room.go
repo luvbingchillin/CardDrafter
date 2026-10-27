@@ -53,7 +53,7 @@ type Seat struct{
 	CurrentPack []*models.Card `json:"-"`
 	PackQueue   [][]*models.Card `json:"-"`
 	DraftedPool []*models.Card `json:"-"`
-	TimeReamining int
+	TimeRemaining int
 }
 
 type Room struct {
@@ -105,6 +105,9 @@ func (r *Room) Run() {
 		seat := r.findSeat(client.userID)
 		if seat != nil {
 			seat.Client = client // Reconnected!
+			if r.state == StateDrafting{
+				r.sendDraftUpdate(seat)
+			}
 		} else if r.state == StateLobby {
 			// 2. New player joining the lobby
 			if r.hostID == "" {
@@ -193,7 +196,7 @@ func (r *Room) Run() {
 								log.Print("Invalid pack")
 							}
 							seat.CurrentPack = pack
-							seat.TimeReamining = 15 + len(pack)*2
+							seat.TimeRemaining = 15 + len(pack)*2
 							seat.PackQueue = make([][]*models.Card, 0)
 							seat.DraftedPool = make([]*models.Card, 0)
 							r.sendDraftUpdate(seat)
@@ -286,7 +289,9 @@ func (r *Room) sendDraftUpdate(seat *Seat){
             "currentPack": seat.CurrentPack,
             "draftedPool": seat.DraftedPool,
             "queueCount":  len(seat.PackQueue),
+			"timeRemaining": seat.TimeRemaining,
 		},
+		
 	})
 }
 
@@ -325,7 +330,7 @@ func (r *Room) passPack(fromSeat *Seat, pack []*models.Card) {
 func (r *Room) advanceSeatPack(seat *Seat) {
 	if len(seat.PackQueue) > 0 {
 		seat.CurrentPack = seat.PackQueue[0]
-		seat.TimeReamining = 15 + len(seat.CurrentPack)*2
+		seat.TimeRemaining = 15 + len(seat.CurrentPack)*2
 		seat.PackQueue = seat.PackQueue[1:]
 	} else {
 		seat.CurrentPack = nil
@@ -350,7 +355,7 @@ func (r *Room) checkRoundCompletion() {
 				log.Printf("Error opening pack for seat %d: %v", s.Index, err)
 			}
 			s.CurrentPack = pack
-			s.TimeReamining = 15 + len(s.CurrentPack)*2
+			s.TimeRemaining = 15 + len(s.CurrentPack)*2
 			s.PackQueue = make([][]*models.Card, 0)
 			r.sendDraftUpdate(s)
 		}
@@ -377,7 +382,7 @@ func (r *Room) handlePickCard(seat *Seat, payload []byte) {
 	cardFound := false
 	for i, card := range seat.CurrentPack {
 		if card.ID == cardID {
-			r.excutePick(seat, i)
+			r.executePick(seat, i)
 			cardFound = true
 			break
 		}
@@ -393,16 +398,18 @@ func (r *Room) handlePickCard(seat *Seat, payload []byte) {
 func (r *Room) handleTick(){
 	for _,seat:=range r.seats{
 		if len(seat.CurrentPack)>0{
-			seat.TimeReamining-=1
-			if seat.TimeReamining<=0{
-				r.excutePick(seat, 0)
+			seat.TimeRemaining-=1
+			if seat.TimeRemaining<=0{
+				r.executePick(seat, 0)
 
+			} else {
+				r.sendToClient(seat.Client, WSMessage{Type:"TIMER_TICK", Payload: map[string]any{"timeRemaining":seat.TimeRemaining}})
 			}
 		}
 	}
 }
 
-func (r *Room) excutePick(seat *Seat, cardIndex int){
+func (r *Room) executePick(seat *Seat, cardIndex int){
 	card := seat.CurrentPack[cardIndex]
 	seat.DraftedPool = append(seat.DraftedPool, card)
 	seat.CurrentPack = append(seat.CurrentPack[:cardIndex], seat.CurrentPack[cardIndex+1:]...)
