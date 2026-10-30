@@ -32,7 +32,5 @@ func (h *Hub) GetOrCreateRoom(id string,) *Room{
 func (h *Hub) RemoveRoom(id string){
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if _,ok:=h.rooms[id];ok{
-		delete(h.rooms, id)
-	}
+	delete(h.rooms, id)
 }

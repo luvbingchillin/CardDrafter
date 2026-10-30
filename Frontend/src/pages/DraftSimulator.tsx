@@ -27,6 +27,11 @@ export interface DraftUpdatePayload {
   currentPack: Card[] | null;
   draftedPool: Card[];
   queueCount: number;
+  timeRemaining: number;
+}
+
+export interface TimerTickPayload {
+  timeRemaining: number;
 }
 
 export interface WSMessage<T = unknown> {
@@ -43,6 +48,7 @@ export function DraftSimulator() {
   const [currentUser, setCurrentUser] = useState<string>('');
   const wsRef = useRef<WebSocket | null>(null);
   const [selectedSets, setSelectedSets] = useState<string[]>(['BLB', 'BLB', 'BLB']);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0)
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}/api/draft/${roomId}/ws`;
@@ -110,6 +116,10 @@ export function DraftSimulator() {
           setLobbyState(msg.payload);
         } else if (msg.type === 'DRAFT_UPDATE') {
           setDraftState(msg.payload);
+          setTimeRemaining(msg.payload.timeRemaining)
+        } else if (msg.type == "TIMER_TICK") {
+          const timer: WSMessage<TimerTickPayload> = msg
+          setTimeRemaining(timer.payload.timeRemaining)
         }
       } catch (err) {
         console.error("Failed to parse WebSocket message:", err);
@@ -306,6 +316,9 @@ export function DraftSimulator() {
                     <span className={styles.hudValue}>
                       {draftState?.round ?? 1} / {draftState?.totalRounds ?? lobbyState.packSets.length}
                     </span>
+                  </div>
+                  <div className={styles.hudStat}>
+                    {draftState?.currentPack ? timeRemaining : "No current packs"}
                   </div>
                   <div className={styles.hudStat}>
                     <span className={styles.hudLabel}>Direction</span>
