@@ -1,15 +1,11 @@
-.cardWrapper {
+﻿.cardWrapper {
   position: relative;
   border-radius: 12px;
   aspect-ratio: 5 / 7;
   overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  /* Lift handled by .cardPickable so only pickable cards lift — pool cards stay flat */
+  transition: box-shadow 200ms ease-out;
   background-color: var(--bg-surface-elevated);
-}
-
-.cardWrapper:hover {
-  transform: translateY(-8px) scale(1.03);
-  z-index: 2;
 }
 
 .mythic {

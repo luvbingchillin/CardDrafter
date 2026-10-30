@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { getMe } from "../api/auth";
 import type { Card } from "../api/pack";
 import { CardUi } from "../components/CardUi";
@@ -117,9 +117,8 @@ export function DraftSimulator() {
         } else if (msg.type === 'DRAFT_UPDATE') {
           setDraftState(msg.payload);
           setTimeRemaining(msg.payload.timeRemaining)
-        } else if (msg.type == "TIMER_TICK") {
-          const timer: WSMessage<TimerTickPayload> = msg
-          setTimeRemaining(timer.payload.timeRemaining)
+        } else if (msg.type === 'TIMER_TICK') {
+          setTimeRemaining(msg.payload.timeRemaining)
         }
       } catch (err) {
         console.error("Failed to parse WebSocket message:", err);

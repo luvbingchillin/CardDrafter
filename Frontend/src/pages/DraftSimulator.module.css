@@ -62,6 +62,7 @@
   color: var(--text-secondary);
 }
 
+/* Fix: specific transition props instead of `all`, plus :active press feedback */
 .btnLeave {
   background: transparent;
   color: var(--text-secondary);
@@ -69,13 +70,17 @@
   padding: 0.4rem 0.9rem;
   border-radius: 8px;
   font-size: 0.85rem;
-  transition: all 0.2s ease;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out, transform 100ms ease-out;
 }
 
 .btnLeave:hover {
   background: var(--bg-surface-elevated);
   color: var(--danger);
   border-color: var(--danger-border);
+}
+
+.btnLeave:active {
+  transform: scale(0.97);
 }
 
 /* Join Screen */
@@ -152,7 +157,8 @@
   flex-direction: column;
   gap: 0.5rem;
   position: relative;
-  transition: border-color 0.2s ease;
+  /* Fix: ease-out for a state-change highlight */
+  transition: border-color 160ms ease-out;
 }
 
 .seatCardCurrent {
@@ -211,6 +217,7 @@
   border-color: var(--primary);
 }
 
+/* Fix: specific transition props + :active press feedback */
 .actionButton {
   background: var(--primary);
   color: #0b0f19;
@@ -218,7 +225,11 @@
   padding: 0.65rem 1.25rem;
   border: none;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: background-color 160ms ease-out, box-shadow 160ms ease-out, transform 100ms ease-out;
+}
+
+.actionButton:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .actionButton:hover:not(:disabled) {
@@ -231,6 +242,7 @@
   cursor: not-allowed;
 }
 
+/* Fix: specific transition props + :active press feedback */
 .btnSecondary {
   background: var(--bg-surface-elevated);
   color: var(--text-primary);
@@ -238,7 +250,11 @@
   padding: 0.65rem 1.25rem;
   border-radius: 8px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: border-color 160ms ease-out, color 160ms ease-out, transform 100ms ease-out;
+}
+
+.btnSecondary:active {
+  transform: scale(0.97);
 }
 
 .btnSecondary:hover {
@@ -329,18 +345,28 @@
   color: var(--text-secondary);
 }
 
+/* Fix: isolation contains z-index of lifted cards within the grid */
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 1.2rem;
+  isolation: isolate;
 }
 
+/* Fix: hover lift moved here so only pickable cards lift (not pool cards).
+   Strong ease-out curve for immediate response. Media-queried to avoid
+   sticky hover on touch devices. */
 .cardPickable {
   cursor: pointer;
+  border-radius: 12px;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.cardPickable:hover {
-  cursor: pointer;
+@media (hover: hover) and (pointer: fine) {
+  .cardPickable:hover {
+    transform: translateY(-8px) scale(1.03);
+    z-index: 2;
+  }
 }
 
 .waitingBox {
@@ -356,14 +382,15 @@
   gap: 1rem;
 }
 
+/* Fix: stronger ease-out curve, calmer scale (1.08 not 1.15) */
 .waitingSpinner {
   font-size: 2.5rem;
-  animation: pulse 1.5s infinite ease-in-out;
+  animation: pulse 1.2s infinite cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 1; }
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
 }
 
 .waitingText {
@@ -393,4 +420,19 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 0.75rem;
+}
+
+/* Accessibility: keep opacity/color transitions, remove motion */
+@media (prefers-reduced-motion: reduce) {
+  .cardPickable {
+    transition: none;
+  }
+  .waitingSpinner {
+    animation: none;
+  }
+  .actionButton,
+  .btnLeave,
+  .btnSecondary {
+    transition: none;
+  }
 }
