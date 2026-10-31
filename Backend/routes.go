@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"backend/internal/draft"
@@ -23,6 +23,6 @@ func setupRoutes(
 	router.Handle("GET /api/auth/me", middleware.AuthMiddleware(http.HandlerFunc(authHandler.GetMe)))
 	router.HandleFunc("POST /api/packs/{setCode}/open", packHandler.OpenPack)
 	router.HandleFunc("GET /api/packs/{setCode}/analytics", analyticsHandler.GetSetAnalytics)
-	router.Handle("GET /api/draft/{roomId}/ws", middleware.AuthMiddleware(http.HandlerFunc(draftHandler.ServeWs)))
+	router.Handle("GET /api/draft/{roomId}/ws", middleware.OptionalAuthMiddleware(http.HandlerFunc(draftHandler.ServeWs)))
 	return router
 }

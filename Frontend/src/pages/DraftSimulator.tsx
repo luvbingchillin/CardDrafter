@@ -4,6 +4,7 @@ import type { Card } from "../api/pack";
 import { CardUi } from "../components/CardUi";
 import { Input } from "../components/ui/Input";
 import styles from "./DraftSimulator.module.css";
+import { copyToClipboard } from "../utils/deckExport";
 
 export interface Seat {
   Index: number;
@@ -39,6 +40,17 @@ export interface WSMessage<T = unknown> {
   payload: T;
 }
 
+// Helper to retrieve or generate a persistent guest identifier for unauthenticated players
+function getOrCreateGuestId(): string {
+  // TODO: Retrieve 'draft_guest_id' from sessionStorage.
+  // If not found, generate a 'Guest_XXXX' ID, persist in sessionStorage, and return it.
+  let guestId = sessionStorage.getItem('draft_guest_id');
+  if (!guestId) {
+    guestId = 'Guest_' + Math.random().toString(36).substring(2, 7).toUpperCase();
+    sessionStorage.setItem('draft_guest_id', guestId);
+  }
+  return guestId;
+}
 export function DraftSimulator() {
   const [roomId, setRoomId] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -49,6 +61,7 @@ export function DraftSimulator() {
   const wsRef = useRef<WebSocket | null>(null);
   const [selectedSets, setSelectedSets] = useState<string[]>(['BLB', 'BLB', 'BLB']);
   const [timeRemaining, setTimeRemaining] = useState<number>(0)
+  const [hasCopied, setHasCopied] = useState(false);
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}/api/draft/${roomId}/ws`;
@@ -96,6 +109,17 @@ export function DraftSimulator() {
 
   const handlePickCard = (cardId: string) => {
     sendAction('PICK_CARD', { cardId });
+  };
+
+  const handleCopyDeck = async () => {
+    if (!draftState?.draftedPool) return;
+    try {
+      await copyToClipboard(draftState.draftedPool);
+      setHasCopied(true);
+      setTimeout(() => setHasCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy deck to clipboard:", err);
+    }
   };
 
   useEffect(() => {
@@ -168,7 +192,24 @@ export function DraftSimulator() {
         </div>
       )}
 
-      {/* 2. ACTIVE ROOM SCREEN */}
+      {/* 2. CONNECTING / LOADING SCREEN */}
+      {roomId && !lobbyState && (
+        <div className={styles.joinCard}>
+          <div className={styles.waitingSpinner}>⏳</div>
+          <h2 className={styles.joinTitle}>Connecting to Room {roomId}...</h2>
+          <p className={styles.exportInfo}>
+            {isConnected ? 'Waiting for lobby data from table host...' : 'Establishing real-time connection...'}
+          </p>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+            <span className={styles.statusBadge}>Playing as: {currentUser ? currentUser : guestId + ' (Guest)'}</span>
+            <button onClick={handleLeaveRoom} className={styles.btnLeave} style={{ marginTop: '0.75rem' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. ACTIVE ROOM SCREEN */}
       {roomId && lobbyState && (
         <>
           {/* Top Bar Navigation & Status */}
@@ -317,7 +358,8 @@ export function DraftSimulator() {
                     </span>
                   </div>
                   <div className={styles.hudStat}>
-                    {draftState?.currentPack ? timeRemaining : "No current packs"}
+                    <span className={styles.hudLabel}>Time Left</span>
+                    <span className={`${styles.hudValue} ${draftState?.currentPack && timeRemaining <= 5 ? styles.hudValueWarning : ""}`}>{draftState?.currentPack ? `${timeRemaining}s` : "—"}</span>
                   </div>
                   <div className={styles.hudStat}>
                     <span className={styles.hudLabel}>Direction</span>
@@ -402,6 +444,15 @@ export function DraftSimulator() {
             <section className={styles.poolSection}>
               <h2>🎉 Draft Complete!</h2>
               <p>You drafted {draftState?.draftedPool?.length ?? 0} cards.</p>
+              <div>
+                {hasCopied && <span className={styles.copySuccessBadge}>Copied to clipboard!</span>}
+                <button
+                  onClick={handleCopyDeck}
+                  className={styles.actionButton}
+                >
+                  Copy to clipboard
+                </button>
+              </div>
               <div className={styles.poolGrid}>
                 {draftState?.draftedPool?.map((card, idx) => (
                   <div key={`${card.id}-${idx}`}>
