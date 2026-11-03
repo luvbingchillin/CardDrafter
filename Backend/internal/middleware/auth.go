@@ -3,6 +3,8 @@
 import (
 	"backend/internal/utils"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 )
 
@@ -42,12 +44,34 @@ func AuthMiddleware(next http.Handler) http.Handler {
 // an ephemeral guest identifier without rejecting the request with 401 Unauthorized.
 func OptionalAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO:
-		// 1. Attempt to extract and validate 'token' cookie via utils.ValidateToken.
-		// 2. If token is invalid or missing, inspect r.URL.Query().Get("userId").
-		// 3. If still empty, generate a fallback "guest_" ephemeral identity.
-		// 4. Inject resolved userID into context with UserIDKey and invoke next.ServeHTTP.
+		var userID string
 
-		next.ServeHTTP(w, r)
+		// 1. Attempt to extract and validate JWT cookie
+		cookie, err := r.Cookie("token")
+		if err == nil {
+			claims, err := utils.ValidateToken(cookie.Value)
+			if err == nil && claims.UserID != "" {
+				userID = claims.UserID
+			}
+		}
+
+		// 2. Fallback: inspect query parameter (e.g. ?userId=Guest_XXXX)
+		if userID == "" {
+			userID = r.URL.Query().Get("userId")
+		}
+
+		// 3. Fallback: generate a random ephemeral guest identifier
+		if userID == "" {
+			bytes := make([]byte, 4)
+			if _, err := rand.Read(bytes); err == nil {
+				userID = "guest_" + hex.EncodeToString(bytes)
+			} else {
+				userID = "guest_anon"
+			}
+		}
+
+		// 4. Inject resolved user identity into context and continue
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
