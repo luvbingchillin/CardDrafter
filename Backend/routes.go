@@ -22,6 +22,7 @@ func setupRoutes(
 	router.HandleFunc("GET /api/auth/google", authHandler.HandleGoogleLogin)
 	router.Handle("GET /api/auth/me", middleware.AuthMiddleware(http.HandlerFunc(authHandler.GetMe)))
 	router.HandleFunc("POST /api/packs/{setCode}/open", packHandler.OpenPack)
+	router.HandleFunc("POST /api/packs/{setCode}/simulate", packHandler.SimulatePacks)
 	router.HandleFunc("GET /api/packs/{setCode}/analytics", analyticsHandler.GetSetAnalytics)
 	router.Handle("GET /api/draft/{roomId}/ws", middleware.OptionalAuthMiddleware(http.HandlerFunc(draftHandler.ServeWs)))
 	return router
