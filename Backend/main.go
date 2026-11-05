@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -64,7 +64,8 @@ func main() {
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	packService := services.NewPackService(cardRepo, rdb)
-	packHander := handlers.NewPackHandler(packService)
+	simService := services.NewSimulationService(cardRepo)
+	packHander := handlers.NewPackHandler(packService, simService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsRepo)
 	draftHub := draft.NewHub(packService)
 	draftHandler := draft.NewDraftHandler(draftHub)

@@ -1,8 +1,7 @@
-package services
+﻿package services
 
 import (
 	"backend/internal/models"
-	"backend/internal/repository"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,16 +13,21 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// CardStore defines the data access contract required by PackService.
+type CardStore interface {
+	GetCardBySet(ctx context.Context, setCode string) ([]*models.Card, error)
+}
+
 // PackService coordinates booster pack collation, in-memory set caching, and event streaming.
 type PackService struct {
-	cardRepo *repository.CardRepository
+	cardRepo CardStore
 	rdb      *redis.Client
 	cacheMu  sync.RWMutex
 	setCache map[string][]*models.Card
 }
 
 // NewPackService constructs a PackService instance with an empty in-memory set cache.
-func NewPackService(cardRepo *repository.CardRepository, rdb *redis.Client) *PackService {
+func NewPackService(cardRepo CardStore, rdb *redis.Client) *PackService {
 	return &PackService{
 		cardRepo: cardRepo,
 		rdb:      rdb,

@@ -1,18 +1,24 @@
-package handlers
+﻿package handlers
 
 import (
-	"backend/internal/repository"
+	"backend/internal/models"
+	"context"
 	"encoding/json"
 	"net/http"
 )
 
-// AnalyticsHandler handles HTTP requests for pack opening analytics and statistics.
-type AnalyticsHandler struct {
-	analyticsRepo *repository.AnalyticsRepository
+// AnalyticsProvider defines the analytics query contract required by AnalyticsHandler.
+type AnalyticsProvider interface {
+	GetAnalyticsBySet(ctx context.Context, setCode string) (*models.SetAnalytics, error)
 }
 
-// NewAnalyticsHandler constructs an AnalyticsHandler instance.
-func NewAnalyticsHandler(analyticsRepo *repository.AnalyticsRepository) *AnalyticsHandler {
+// AnalyticsHandler handles HTTP requests for pack opening analytics and statistics.
+type AnalyticsHandler struct {
+	analyticsRepo AnalyticsProvider
+}
+
+// NewAnalyticsHandler constructs an AnalyticsHandler instance using an interface.
+func NewAnalyticsHandler(analyticsRepo AnalyticsProvider) *AnalyticsHandler {
 	return &AnalyticsHandler{
 		analyticsRepo: analyticsRepo,
 	}

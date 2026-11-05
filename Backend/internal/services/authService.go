@@ -1,8 +1,7 @@
-package services
+﻿package services
 
 import (
 	"backend/internal/models"
-	"backend/internal/repository"
 	"context"
 	"errors"
 	"time"
@@ -10,11 +9,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct {
-	userRepo *repository.UserRepository
+// UserStore defines the database access contract required by AuthService.
+type UserStore interface {
+	FindByLogin(ctx context.Context, login string) (*models.User, error)
+	CreateUser(ctx context.Context, user *models.User) error
+	FindByGoogleId(ctx context.Context, googleID string) (*models.User, error)
+	FindByID(ctx context.Context, id string) (*models.User, error)
 }
 
-func NewAuthService(userRepo *repository.UserRepository) *AuthService {
+type AuthService struct {
+	userRepo UserStore
+}
+
+func NewAuthService(userRepo UserStore) *AuthService {
 	return &AuthService{userRepo: userRepo}
 }
 
