@@ -11,7 +11,7 @@ import './App.css';
 function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isAuth, setIsAuth] = useState(() => searchParams.get('auth') === 'success');
-  const [loginPopup, SetLoginPopup] = useState(false);
+  const [loginPopup, setLoginPopup] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('auth') === 'success') {
@@ -23,28 +23,34 @@ function App() {
       }
     });
   }, [searchParams, setSearchParams]);
+
   return (
     <>
       <header className="header">
-        <NavLink to="/" className="brand">
-          <span className="brand-text">Placeholder</span>
+        <NavLink to="/" className="brand" aria-label="CardSim Home">
+          <span className="brand-logo" aria-hidden="true">🎴</span>
+          <span className="brand-text">CardSim</span>
         </NavLink>
-        <nav className="nav">
+        <nav className="nav" aria-label="Primary navigation">
           <NavLink className="navLink" to="/packs">
-            Pack simulator
+            Pack Simulator
           </NavLink>
           <NavLink className="navLink" to="/draft">
-            Draft simulator
+            Draft Simulator
           </NavLink>
         </nav>
         <div className="userSection">
           {!isAuth ? (
-            <button className="loginBtn" onClick={() => SetLoginPopup(true)}>
-              <div>Login/SignUp</div>
+            <button
+              className="loginBtn"
+              onClick={() => setLoginPopup(true)}
+              aria-label="Open login and registration dialog"
+            >
+              Sign In
             </button>
           ) : (
-            <div className="userBadge">
-              <span>My account</span>
+            <div className="userBadge" role="status">
+              <span>My Account</span>
             </div>
           )}
         </div>
@@ -52,9 +58,7 @@ function App() {
 
       <LoginModal
         isOpen={loginPopup}
-        onClose={() => {
-          SetLoginPopup(false);
-        }}
+        onClose={() => setLoginPopup(false)}
         onSuccess={() => setIsAuth(true)}
       />
 

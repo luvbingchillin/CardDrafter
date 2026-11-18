@@ -81,13 +81,24 @@ export function PackOpeningPage() {
         }
     };
 
+    const handlePackKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPackBySet();
+        }
+    };
+
     const packImageUrl = `/packs/${setCode?.toUpperCase()}.png`;
 
     return (
         <div className={styles.container}>
             {/* Navigation & Header */}
-            <div className={styles.topBar}>
-                <button className={styles.backButton} onClick={() => navigate('/packs')}>
+            <header className={styles.topBar}>
+                <button
+                    className={styles.backButton}
+                    onClick={() => navigate('/packs')}
+                    aria-label="Back to sets gallery"
+                >
                     ← Back to Sets
                 </button>
                 <h1 className={styles.setTitle}>{setCode?.toUpperCase()} Booster Pack</h1>
@@ -98,14 +109,14 @@ export function PackOpeningPage() {
                         <span>Rares: <strong className={styles.rareText}>{analytics.rare_count}</strong></span>
                     </div>
                 )}
-            </div>
+            </header>
 
             {/* Persistent Pack Action Bar */}
             <div className={styles.actionBar}>
                 <div className={styles.packIdentity}>
                     <img
                         src={packImageUrl}
-                        alt={`${setCode} booster`}
+                        alt={`${setCode} booster thumbnail`}
                         className={styles.miniPackThumb}
                         onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = '/packs/default.png';
@@ -123,6 +134,7 @@ export function PackOpeningPage() {
                     className={styles.openButton}
                     onClick={openPackBySet}
                     disabled={loading}
+                    aria-label="Open booster pack"
                 >
                     {loading
                         ? 'Cracking & Buffering...'
@@ -132,13 +144,13 @@ export function PackOpeningPage() {
                 </button>
             </div>
 
-            {error && <div className={styles.errorBanner}>{error}</div>}
+            {error && <div className={styles.errorBanner} role="alert">{error}</div>}
 
             {/* Stage Area: Loading Buffer, Cards Grid, or Initial Prompt */}
-            <div className={styles.arena}>
+            <main className={styles.arena}>
                 {loading ? (
                     <div className={styles.loadingContainer}>
-                        <div className={styles.spinner}></div>
+                        <div className={styles.spinner} aria-hidden="true"></div>
                         <p className={styles.loadingText}>Cracking pack & buffering card artwork...</p>
                     </div>
                 ) : cards.length > 0 ? (
@@ -150,17 +162,24 @@ export function PackOpeningPage() {
                 ) : (
                     <div className={styles.emptyPrompt}>
                         <img
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Click to open ${setCode} booster pack`}
                             src={packImageUrl}
-                            alt={`${setCode} booster`}
+                            alt={`${setCode} booster pack artwork`}
                             className={styles.heroPackImage}
+                            onClick={openPackBySet}
+                            onKeyDown={handlePackKeyDown}
                             onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = '/packs/default.png';
                             }}
                         />
-                        <p className={styles.emptyText}>Ready to open? Hit <strong>"Open Booster"</strong> above to crack your pack!</p>
+                        <p className={styles.emptyText}>
+                            Ready to crack? Click the booster pack or hit <strong>"Open Booster"</strong> above!
+                        </p>
                     </div>
                 )}
-            </div>
+            </main>
         </div>
     );
 }

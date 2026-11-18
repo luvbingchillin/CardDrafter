@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from './ui/Input';
 import styles from './LoginModal.module.css';
 import { loginUser, registerUser } from '../api/auth';
@@ -10,12 +10,25 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
-  const [user, SetUser] = useState('');
+  const [user, setUser] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [errorText, setErrorText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleSubmitLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorText('');
@@ -30,11 +43,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       } else {
         setErrorText('Network error');
       }
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
+
   const handleSubmitRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorText('');
@@ -49,48 +62,58 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       } else {
         setErrorText('Network error');
       }
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
+
   const switchMode = (loginMode: boolean) => {
     setIsLogin(loginMode);
     setErrorText('');
-    SetUser('');
+    setUser('');
     setPassword('');
     setEmail('');
   };
 
   if (!isOpen) return null;
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
         className={`${styles.modal} ${isLogin ? styles.modalLogin : styles.modalRegister}`}
         onClick={(e) => e.stopPropagation()}
       >
         {isLogin ? (
           <>
             <div className={styles.header}>
-              <h3>Login</h3>
-              <button className={styles.closeButton} onClick={onClose}>
+              <h3 id="login-modal-title">Log In</h3>
+              <button
+                className={styles.closeButton}
+                onClick={onClose}
+                aria-label="Close dialog"
+              >
                 <CloseIcon />
               </button>
             </div>
-            {errorText && <div className={styles.errorAlert}>{errorText}</div>}
+            {errorText && <div className={styles.errorAlert} role="alert">{errorText}</div>}
             <form
               key="login"
               onSubmit={handleSubmitLogin}
               className={styles.form}
             >
               <Input
-                placeholder="Userame/Email"
+                placeholder="Username or email address"
                 type="text"
                 label="Username or Email"
                 value={user}
+                autoFocus
                 onChange={(e) => {
-                  SetUser(e.target.value);
+                  setUser(e.target.value);
                 }}
+                required
               />
               <Input
                 placeholder="Password"
@@ -98,9 +121,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                 label="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              <button className={styles.submit} type="submit">
-                Submit
+              <button className={styles.submit} type="submit" disabled={isLoading}>
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
               <div className={styles.divider}>
                 <span>or continue with</span>
@@ -112,6 +136,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   }}
                   type="button"
                   className={styles.iconOnlyButton}
+                  aria-label="Sign in with Google"
                 >
                   <GoogleIcon />
                 </button>
@@ -133,44 +158,52 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         ) : (
           <>
             <div className={styles.header}>
-              <h3>Register</h3>
-              <button className={styles.closeButton} onClick={onClose}>
+              <h3 id="login-modal-title">Create Account</h3>
+              <button
+                className={styles.closeButton}
+                onClick={onClose}
+                aria-label="Close dialog"
+              >
                 <CloseIcon />
               </button>
             </div>
-            {errorText && <div className={styles.errorAlert}>{errorText}</div>}
+            {errorText && <div className={styles.errorAlert} role="alert">{errorText}</div>}
             <form
               key="register"
               onSubmit={handleSubmitRegister}
               className={styles.form}
             >
               <Input
-                placeholder="Userame"
+                placeholder="Choose a username"
                 type="text"
                 label="Username"
                 value={user}
+                autoFocus
                 onChange={(e) => {
-                  SetUser(e.target.value);
+                  setUser(e.target.value);
                 }}
+                required
               />
               <Input
-                placeholder="Email"
-                type="text"
+                placeholder="you@example.com"
+                type="email"
                 label="Email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                 }}
+                required
               />
               <Input
-                placeholder="Password"
+                placeholder="Create a password"
                 type="password"
                 label="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              <button className={styles.submit} type="submit">
-                {isLoading ? 'Creating account...' : 'Submit'}
+              <button className={styles.submit} type="submit" disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Sign Up'}
               </button>
               <div className={styles.divider}>
                 <span>or continue with</span>
@@ -182,6 +215,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   }}
                   type="button"
                   className={styles.iconOnlyButton}
+                  aria-label="Sign in with Google"
                 >
                   <GoogleIcon />
                 </button>
@@ -208,7 +242,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path
         fill="#4285F4"
         d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
@@ -231,7 +265,7 @@ function GoogleIcon() {
 
 function CloseIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
     </svg>
   );

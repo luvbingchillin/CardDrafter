@@ -8,7 +8,8 @@ export function PackSimulator() {
   const [packData, setPackData] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchPacks = async () => {
       try {
@@ -19,7 +20,7 @@ export function PackSimulator() {
         if (error instanceof Error) {
           setError(error.message);
         } else {
-          setError('unknown error occured');
+          setError('Unknown error occurred');
         }
       } finally {
         setLoading(false);
@@ -27,6 +28,7 @@ export function PackSimulator() {
     };
     fetchPacks();
   }, []);
+
   if (loading) {
     return <div className={styles.statusMessage}>Loading booster packs...</div>;
   }
@@ -37,14 +39,15 @@ export function PackSimulator() {
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.header}>
-        <p className={styles.subtitle}>Select a pack to open</p>
-      </div>
-      <div className={styles.packGrid}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Booster Packs</h1>
+        <p className={styles.subtitle}>Select a set to crack packs and test pull probabilities</p>
+      </header>
+      <main className={styles.packGrid}>
         {packData.map((pack) => (
           <PackUi pack={pack} key={pack.setCode} onClick={() => navigate(`/packs/${pack.setCode}`)} />
         ))}
-      </div>
+      </main>
     </div>
   );
 }

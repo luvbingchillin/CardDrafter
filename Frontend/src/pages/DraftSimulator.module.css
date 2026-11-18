@@ -1,4 +1,4 @@
-﻿.container {
+.container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
@@ -472,4 +472,173 @@
   .btnSecondary {
     transition: none;
   }
+}
+
+.confirmPickButton {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  padding: 0.45rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 0 16px var(--primary-glow);
+  animation: confirmPulse 1.5s infinite ease-in-out;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.confirmPickButton:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.confirmPickButton:active {
+  transform: scale(0.97);
+}
+
+@keyframes confirmPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 24px var(--primary-glow), 0 0 8px var(--primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmPickButton {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Pool Header & View Mode Switcher */
+.poolTitleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.poolTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.poolSubtitle {
+  font-size: 0.82rem;
+  color: var(--primary-text);
+  font-weight: 500;
+}
+
+.viewModeToggle {
+  display: flex;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.toggleButton {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.toggleButton:hover {
+  color: var(--text-primary);
+}
+
+.toggleActive {
+  background: var(--primary);
+  color: #ffffff !important;
+}
+
+/* Mana Curve Columns Layout */
+.curveContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+  align-items: start;
+  min-height: 250px;
+  padding-top: 0.5rem;
+}
+
+.curveColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.75rem;
+  min-height: 140px;
+}
+
+.curveHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.curveCostBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.curveCount {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.curveCardStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stackedCard {
+  width: 100%;
+}
+
+/* Table Passing & Neighbor Status List */
+.neighborStatusList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.neighborBadge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.neighborBadgeSelf {
+  border-color: var(--primary);
+  color: var(--primary-text);
+  background: var(--primary-tint);
 }

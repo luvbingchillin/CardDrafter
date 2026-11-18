@@ -18,49 +18,47 @@
 
 .backButton {
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid #334155;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
   padding: 0.5rem 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   font-weight: 500;
 }
 
 .backButton:hover {
-  background: #1e293b;
-  color: #f8fafc;
-  border-color: #475569;
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-muted);
 }
 
 .setTitle {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text-primary);
   margin: 0;
-  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.01em;
 }
 
 /* Analytics HUD */
 .analyticsHud {
   display: flex;
   gap: 1.25rem;
-  background: #1e293b;
+  background: var(--bg-surface);
   padding: 0.6rem 1.2rem;
   border-radius: 9999px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border-subtle);
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .mythicText {
-  color: #f97316;
+  color: var(--rarity-mythic);
 }
 
 .rareText {
-  color: #eab308;
+  color: var(--rarity-rare);
 }
 
 /* Persistent Action Bar */
@@ -68,9 +66,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(17, 24, 39, 0.75);
   backdrop-filter: blur(12px);
-  border: 1px solid #334155;
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 0.85rem 1.5rem;
   margin-bottom: 2rem;
@@ -100,18 +98,18 @@
 
 .packName {
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
 .cardCountText {
-  color: #a5b4fc;
+  color: var(--primary-text);
   font-size: 0.85rem;
   font-weight: 500;
 }
 
 .openButton {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: var(--primary);
   color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
@@ -119,13 +117,14 @@
   border: none;
   border-radius: 9999px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px var(--primary-glow);
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .openButton:hover:not(:disabled) {
+  background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+  box-shadow: 0 6px 20px var(--primary-glow);
 }
 
 .openButton:disabled {
@@ -154,8 +153,8 @@
 .spinner {
   width: 54px;
   height: 54px;
-  border: 4px solid #334155;
-  border-top-color: #6366f1;
+  border: 4px solid var(--border-muted);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -167,7 +166,7 @@
 }
 
 .loadingText {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 1.05rem;
   letter-spacing: 0.02em;
 }
@@ -189,21 +188,25 @@
   object-fit: cover;
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  transition: transform 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+  outline: none;
 }
 
-.heroPackImage:hover {
-  transform: translateY(-6px) scale(1.02);
+.heroPackImage:hover,
+.heroPackImage:focus-visible {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 24px 48px var(--primary-glow);
 }
 
 .emptyText {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 1.1rem;
-  max-width: 400px;
+  max-width: 420px;
 }
 
 .emptyText strong {
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 /* Revealed Cards Grid */
@@ -228,8 +231,8 @@
 
 .errorBanner {
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
+  border: 1px solid var(--danger);
+  color: var(--danger-text);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
