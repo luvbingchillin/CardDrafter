@@ -3,6 +3,7 @@
   border-radius: 12px;
   aspect-ratio: 5 / 7;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
   transition:
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.2s ease,
@@ -16,30 +17,32 @@
 }
 
 .interactive:hover {
-  transform: translateY(-6px) scale(1.02);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
   z-index: 10;
 }
 
 .interactive:focus-visible {
-  box-shadow: 0 0 0 3px var(--primary), 0 0 20px var(--primary-glow);
-  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-focus);
+  transform: translateY(-4px);
   z-index: 10;
 }
 
 .selected {
   border: 2px solid var(--primary) !important;
-  box-shadow: 0 0 24px var(--primary-glow), 0 0 10px var(--primary) !important;
-  transform: translateY(-8px) scale(1.04) !important;
+  box-shadow: 0 14px 32px -4px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--primary) !important;
+  transform: translateY(-8px) scale(1.03) !important;
   z-index: 20;
 }
 
 .mythic {
-  box-shadow: 0 0 16px var(--rarity-mythic-glow);
   border: 1px solid var(--rarity-mythic);
+  box-shadow: 0 4px 18px -2px rgba(234, 88, 12, 0.28);
 }
 
 .rare {
   border: 1px solid var(--rarity-rare);
+  box-shadow: 0 4px 14px -2px rgba(245, 158, 11, 0.2);
 }
 
 .uncommon {

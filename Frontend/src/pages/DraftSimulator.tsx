@@ -3,6 +3,16 @@ import { getMe } from "../api/auth";
 import type { Card } from "../api/pack";
 import { CardUi } from "../components/CardUi";
 import { Input } from "../components/ui/Input";
+import {
+  CheckIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  LayersIcon,
+  BarChartIcon,
+  GridIcon,
+  SpinnerIcon,
+  StatusDot,
+} from "../components/ui/Icons";
 import styles from "./DraftSimulator.module.css";
 import { copyToClipboard } from "../utils/deckExport";
 
@@ -263,13 +273,18 @@ export function DraftSimulator() {
       {/* 2. CONNECTING / LOADING SCREEN */}
       {roomId && !lobbyState && (
         <div className={styles.joinCard}>
-          <div className={styles.waitingSpinner}>⏳</div>
+          <div className={styles.waitingSpinner}>
+            <SpinnerIcon size={36} />
+          </div>
           <h2 className={styles.joinTitle}>Connecting to Room {roomId}...</h2>
           <p className={styles.exportInfo}>
             {isConnected ? 'Waiting for lobby data from table host...' : 'Establishing real-time connection...'}
           </p>
           <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-            <span className={styles.statusBadge}>Playing as: {currentUser ? currentUser : guestId + ' (Guest)'}</span>
+            <span className={styles.statusBadge}>
+              <StatusDot status={isConnected ? 'online' : 'reconnecting'} />
+              Playing as: {currentUser ? currentUser : guestId + ' (Guest)'}
+            </span>
             <button onClick={handleLeaveRoom} className={styles.btnLeave} style={{ marginTop: '0.75rem' }}>
               Cancel
             </button>
@@ -289,7 +304,8 @@ export function DraftSimulator() {
 
             <div className={styles.topControls}>
               <div className={styles.statusBadge}>
-                {isConnected ? '🟢 Connected' : '🟠 Reconnecting...'}
+                <StatusDot status={isConnected ? 'online' : 'reconnecting'} />
+                <span>{isConnected ? 'Connected' : 'Reconnecting...'}</span>
               </div>
               <button onClick={handleLeaveRoom} className={styles.btnLeave}>
                 Leave Room
@@ -325,9 +341,14 @@ export function DraftSimulator() {
                           {seat.UserID} {isSelf && '(You)'}
                         </div>
                         <div className={styles.seatIndicators}>
-                          <span>{seat.Client ? '🟢 Online' : '⚪ Offline'}</span>
-                          <span>•</span>
-                          <span>{seat.IsReady ? '✅ Ready' : '⏳ Waiting'}</span>
+                          <span className={styles.seatIndicatorItem}>
+                            <StatusDot status={seat.Client ? 'online' : 'offline'} />
+                            {seat.Client ? 'Online' : 'Offline'}
+                          </span>
+                          <span className={styles.seatIndicatorItem}>
+                            <StatusDot status={seat.IsReady ? 'online' : 'waiting'} />
+                            {seat.IsReady ? 'Ready' : 'Waiting'}
+                          </span>
                         </div>
                       </div>
                     );
@@ -399,7 +420,7 @@ export function DraftSimulator() {
                 ) : (
                   <div>
                     {!lobbyState.packSets || lobbyState.packSets.length === 0 ? (
-                      <p className={styles.packInstruction}>⏳ Waiting for host to select packs...</p>
+                      <p className={styles.packInstruction}>Waiting for host to configure packs...</p>
                     ) : (
                       lobbyState.packSets.map((pack, index) => (
                         <div key={index} style={{ marginBottom: '0.5rem' }}>
@@ -434,7 +455,15 @@ export function DraftSimulator() {
                   <div className={styles.hudStat}>
                     <span className={styles.hudLabel}>Direction</span>
                     <span className={styles.directionBadge}>
-                      {((draftState?.round ?? 1) % 2 === 1) ? 'Passing Left ➡️' : 'Passing Right ⬅️'}
+                      {((draftState?.round ?? 1) % 2 === 1) ? (
+                        <>
+                          <ArrowRightIcon size={14} /> Passing Left
+                        </>
+                      ) : (
+                        <>
+                          <ArrowLeftIcon size={14} /> Passing Right
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -442,7 +471,8 @@ export function DraftSimulator() {
                 <div className={styles.hudGroup}>
                   {Boolean(draftState && draftState.queueCount > 0) && (
                     <span className={styles.queueBadge}>
-                      ⚡ {draftState?.queueCount} Queued Pack{draftState && draftState.queueCount > 1 ? 's' : ''}
+                      <LayersIcon size={14} />
+                      {draftState?.queueCount} Queued Pack{draftState && draftState.queueCount > 1 ? 's' : ''}
                     </span>
                   )}
                   <div className={styles.hudStat}>
@@ -461,7 +491,7 @@ export function DraftSimulator() {
                       {draftState?.currentPack && draftState.currentPack.length > 0
                         ? (selectedCardId
                             ? 'Click highlighted card again or press "Confirm Pick" to lock in'
-                            : 'Click a card to select it')
+                            : 'Click a card to inspect and select it')
                         : 'Waiting for neighbor'}
                     </span>
                   </div>
@@ -472,7 +502,7 @@ export function DraftSimulator() {
                       className={styles.confirmPickButton}
                       aria-label="Confirm picked card"
                     >
-                      Confirm Pick ✓
+                      <CheckIcon size={15} /> Confirm Pick
                     </button>
                   )}
                 </div>
@@ -490,7 +520,9 @@ export function DraftSimulator() {
                   </div>
                 ) : (
                   <div className={styles.waitingBox}>
-                    <div className={styles.waitingSpinner} aria-hidden="true">⏳</div>
+                    <div className={styles.waitingSpinner}>
+                      <SpinnerIcon size={32} />
+                    </div>
                     <div className={styles.waitingText}>
                       Waiting for your neighbor to pass the next pack...
                     </div>
@@ -501,7 +533,8 @@ export function DraftSimulator() {
                             key={seat.UserID}
                             className={`${styles.neighborBadge} ${seat.UserID === currentUser ? styles.neighborBadgeSelf : ''}`}
                           >
-                            Seat {seat.Index + 1}: {seat.UserID === currentUser ? 'You (Waiting)' : seat.UserID}
+                            <StatusDot status={seat.Client ? 'online' : 'offline'} />
+                            Seat {seat.Index + 1}: {seat.UserID === currentUser ? 'You' : seat.UserID}
                           </span>
                         ))}
                       </div>
@@ -531,14 +564,14 @@ export function DraftSimulator() {
                         onClick={() => setPoolViewMode('curve')}
                         type="button"
                       >
-                        📊 Mana Curve
+                        <BarChartIcon size={14} /> Curve
                       </button>
                       <button
                         className={`${styles.toggleButton} ${poolViewMode === 'grid' ? styles.toggleActive : ''}`}
                         onClick={() => setPoolViewMode('grid')}
                         type="button"
                       >
-                        🎴 Flat Grid
+                        <GridIcon size={14} /> Grid
                       </button>
                     </div>
                   )}
@@ -589,13 +622,13 @@ export function DraftSimulator() {
             <section className={styles.poolSection}>
               <div className={styles.poolHeader}>
                 <div>
-                  <h2>🎉 Draft Complete!</h2>
-                  <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  <h2 className={styles.poolTitle}>Draft Complete</h2>
+                  <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '0.9rem' }}>
                     You drafted {draftState?.draftedPool?.length ?? 0} cards ({creatureCount} Creatures, {nonCreatureCount} Non-Creatures).
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                  {hasCopied && <span className={styles.copySuccessBadge}>Copied to clipboard!</span>}
+                  {hasCopied && <span className={styles.copySuccessBadge}><CheckIcon size={14} /> Copied to clipboard!</span>}
                   <button
                     onClick={handleCopyDeck}
                     className={styles.actionButton}

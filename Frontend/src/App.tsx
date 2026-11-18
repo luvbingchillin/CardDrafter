@@ -5,6 +5,7 @@ import { LoginModal } from './components/LoginModal';
 import { PackSimulator } from './pages/PackSimulator';
 import { DraftSimulator } from './pages/DraftSimulator';
 import { PackOpeningPage } from './pages/PackOpeningPage';
+import { LogoIcon } from './components/ui/Icons';
 import { getMe } from './api/auth';
 import './App.css';
 
@@ -28,7 +29,7 @@ function App() {
     <>
       <header className="header">
         <NavLink to="/" className="brand" aria-label="CardSim Home">
-          <span className="brand-logo" aria-hidden="true">🎴</span>
+          <LogoIcon size={22} className="brandIcon" />
           <span className="brand-text">CardSim</span>
         </NavLink>
         <nav className="nav" aria-label="Primary navigation">
@@ -44,7 +45,7 @@ function App() {
             <button
               className="loginBtn"
               onClick={() => setLoginPopup(true)}
-              aria-label="Open login and registration dialog"
+              aria-label="Open sign in dialog"
             >
               Sign In
             </button>

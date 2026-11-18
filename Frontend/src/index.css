@@ -15,7 +15,7 @@
   /* 60% Dominant Base Canvas */
   --bg-base: #0b0f19;
   --bg-surface: #111827;
-  --bg-surface-elevated: #1f293d;
+  --bg-surface-elevated: #1a2234;
 
   /* 30% Neutrals, Borders, Text */
   --border-subtle: rgba(255, 255, 255, 0.08);
@@ -27,9 +27,16 @@
   /* 10% Emerald Accent */
   --primary: #10b981;
   --primary-hover: #059669;
-  --primary-glow: rgba(16, 185, 129, 0.3);
-  --primary-tint: rgba(16, 185, 129, 0.12);
+  --primary-glow: rgba(16, 185, 129, 0.2);
+  --primary-tint: rgba(16, 185, 129, 0.1);
   --primary-text: #34d399;
+
+  /* Physical Directional Shadows (No zero-offset neon halos) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px -3px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 14px 32px -6px rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+  --shadow-focus: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--primary);
 
   /* Semantic Feedback */
   --danger: #ef4444;
@@ -38,11 +45,39 @@
   --danger-text: #b91c1c;
 
   /* MTG Rarity Design Tokens */
-  --rarity-common: #1e293b;
+  --rarity-common: #334155;
   --rarity-uncommon: #94a3b8;
-  --rarity-rare: #fbbf24;
-  --rarity-mythic: #f97316;
-  --rarity-mythic-glow: rgba(249, 115, 22, 0.35);
+  --rarity-rare: #f59e0b;
+  --rarity-mythic: #ea580c;
+}
+
+/* Browser Surfaces Theming */
+::selection {
+  background-color: rgba(16, 185, 129, 0.28);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-muted) var(--bg-base);
 }
 
 body {
@@ -63,12 +98,14 @@ body {
   background-color: var(--bg-base);
 }
 
-
 button {
   font: inherit;
   cursor: pointer;
 }
 
-input {
+input,
+textarea,
+select {
   font: inherit;
+  caret-color: var(--primary);
 }
