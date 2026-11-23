@@ -60,6 +60,8 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	cardRepo := repository.NewCardRepository(db)
 	analyticsRepo := repository.NewAnalyticsRepository(db)
+	eventStore := repository.NewRedisEventStore(rdb)
+
 
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -67,8 +69,9 @@ func main() {
 	simService := services.NewSimulationService(cardRepo)
 	packHander := handlers.NewPackHandler(packService, simService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsRepo)
-	draftHub := draft.NewHub(packService)
+	draftHub := draft.NewHub(packService, eventStore)
 	draftHandler := draft.NewDraftHandler(draftHub)
+
 
 	router := setupRoutes(authHandler, packHander, analyticsHandler, draftHandler)
 	port := ":8000"

@@ -1,4 +1,4 @@
-﻿package draft
+package draft
 
 import (
 	"backend/internal/models"
@@ -48,7 +48,6 @@ func (s *AggregateRoomState) Apply(event DraftEvent) {
 	case EventPlayerJoined:
 		var p PlayerJoinedPayload
 		if err := json.Unmarshal(event.Payload, &p); err == nil {
-			// Find existing seat or append
 			existingSeat := s.FindSeat(p.UserID)
 			if existingSeat == nil {
 				s.Seats = append(s.Seats, &Seat{
@@ -59,6 +58,22 @@ func (s *AggregateRoomState) Apply(event DraftEvent) {
 					PackQueue:   make([][]*models.Card, 0),
 					DraftedPool: make([]*models.Card, 0),
 				})
+			}
+		}
+
+	case EventPlayerLeft:
+		var p PlayerLeftPayload
+		if err := json.Unmarshal(event.Payload, &p); err == nil {
+			if s.State == StateLobby {
+				for i, seat := range s.Seats {
+					if seat.UserID == p.UserID {
+						s.Seats = append(s.Seats[:i], s.Seats[i+1:]...)
+						for idx, remaining := range s.Seats {
+							remaining.Index = idx
+						}
+						break
+					}
+				}
 			}
 		}
 
@@ -99,10 +114,18 @@ func (s *AggregateRoomState) Apply(event DraftEvent) {
 			if seat != nil && len(seat.CurrentPack) > 0 {
 				cardID, err := bson.ObjectIDFromHex(p.CardID)
 				if err == nil {
-					for i, c := range seat.CurrentPack {
+					for _, c := range seat.CurrentPack {
 						if c.ID == cardID {
 							seat.DraftedPool = append(seat.DraftedPool, c)
-							seat.CurrentPack = append(seat.CurrentPack[:i], seat.CurrentPack[i+1:]...)
+							// Advance the seat to its next queued pack (or nil if waiting on neighbor)
+							if len(seat.PackQueue) > 0 {
+								seat.CurrentPack = seat.PackQueue[0]
+								seat.TimeRemaining = 15 + len(seat.CurrentPack)*2
+								seat.PackQueue = seat.PackQueue[1:]
+							} else {
+								seat.CurrentPack = nil
+								seat.TimeRemaining = 0
+							}
 							break
 						}
 					}
