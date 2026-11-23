@@ -9,14 +9,23 @@ from pymongo import MongoClient
 import pandas as pd
 
 _mongo_client: MongoClient | None = None
+_indexes_ensured: bool = False
+
 
 def get_mongo_db():
     """Returns a singleton PyMongo database handle, reusing the client connection pool."""
-    global _mongo_client
+    global _mongo_client, _indexes_ensured
     if _mongo_client is None:
         mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
         _mongo_client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-    return _mongo_client["cardsim_db"]
+    db = _mongo_client["cardsim_db"]
+    if not _indexes_ensured:
+        try:
+            db["roll_logs"].create_index("message_id", unique=True)
+            _indexes_ensured = True
+        except Exception as e:
+            logger.warning(f"Could not ensure unique index on roll_logs.message_id: {e}")
+    return db
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +45,7 @@ def init_redis() -> redis.Redis:
 def setup_consumer_group(r: redis.Redis) -> None:
     """
     Ensures the consumer group exists on the target stream.
-    
+
     If the group already exists (BUSYGROUP), the exception is safely ignored.
     mkstream=True ensures the stream is initialized if no events have been pushed yet.
     """
@@ -52,22 +61,34 @@ def setup_consumer_group(r: redis.Redis) -> None:
 
 def process_batch(events: list) -> None:
     """
-    Parses a batch of Redis Stream events, aggregates pull counts using Pandas,
-    and updates lifetime statistics in MongoDB.
+    Idempotently parses a batch of Redis Stream events, filters out any already-recorded
+    message_ids in 'roll_logs', aggregates pull counts using Pandas, and updates
+    lifetime statistics in MongoDB.
     """
     if not events:
         return
     db = get_mongo_db()
+
+    # 1. Deduplicate against roll_logs so PEL retries never double-count $inc analytics
+    batch_msg_ids = [message_id for message_id, _ in events]
+    existing_ids = set(
+        db["roll_logs"].distinct("message_id", {"message_id": {"$in": batch_msg_ids}})
+    )
+
     records = []
     audit_logs = []
-    # 1. Parse and deserialize the raw Redis string fields
+
+    # 2. Parse and deserialize only unrecorded Redis stream messages
     for message_id, data in events:
+        if message_id in existing_ids:
+            continue
+
         card_ids = json.loads(data.get("card_ids", "[]"))
         rarities = json.loads(data.get("rarities", "[]"))
         set_code = data.get("set_code", "UNKNOWN")
         user_id = data.get("user_id", "ANONYMOUS")
         opened_at = data.get("opened_at", datetime.now(timezone.utc).isoformat())
-        # For the raw audit log collection
+
         audit_logs.append({
             "message_id": message_id,
             "user_id": user_id,
@@ -77,28 +98,31 @@ def process_batch(events: list) -> None:
             "card_ids": card_ids,
             "rarities": rarities,
         })
-        # For the Pandas aggregation
+
         for rarity in rarities:
             records.append({
                 "set_code": set_code,
                 "rarity": rarity.lower(),
             })
-    # 2. Insert raw historical rolls into 'roll_logs'
-    if audit_logs:
-        db["roll_logs"].insert_many(audit_logs)
-    # 3. Aggregate rarity counts per set using Pandas
+
+    if not audit_logs:
+        logger.info("Batch already processed (idempotent skip).")
+        return
+
+    # 3. Insert raw historical rolls into 'roll_logs'
+    db["roll_logs"].insert_many(audit_logs, ordered=False)
+
+    # 4. Aggregate rarity counts per set using Pandas
     if records:
         df = pd.DataFrame(records)
-        # Count occurrences of each rarity per set_code
-        # This produces a pivot table with columns: common, uncommon, rare, mythic
         rarity_counts = (
             df.groupby(["set_code", "rarity"])
             .size()
             .unstack(fill_value=0)
         )
-        # 4. Count total packs opened per set in this batch
         packs_df = pd.DataFrame(audit_logs)
         packs_per_set = packs_df["set_code"].value_counts().to_dict()
+
         # 5. Atomically increment ($inc) lifetime counters in MongoDB
         for set_code, pack_count in packs_per_set.items():
             mythics = int(rarity_counts.loc[set_code].get("mythic", 0)) if set_code in rarity_counts.index else 0
@@ -124,14 +148,42 @@ def process_batch(events: list) -> None:
     logger.info(f"Successfully processed batch of {len(audit_logs)} pack open events.")
 
 
+def drain_pending_messages(r: redis.Redis, stop_event: threading.Event) -> None:
+    """
+    Phase 1 Recovery: Drains any unacknowledged messages sitting in the consumer group's
+    Pending Entries List (PEL) from a prior crash using stream ID '0'.
+    """
+    while not stop_event.is_set():
+        response = r.xreadgroup(
+            groupname=GROUP_NAME,
+            consumername=CONSUMER_NAME,
+            streams={STREAM_NAME: "0"},
+            count=100,
+        )
+        if not response:
+            break
+
+        has_pending = False
+        for stream_name, messages in response:
+            if messages:
+                has_pending = True
+                logger.info(f"Recovering {len(messages)} unacknowledged PEL messages...")
+                process_batch(messages)
+                msg_ids = [msg_id for msg_id, _ in messages]
+                r.xack(STREAM_NAME, GROUP_NAME, *msg_ids)
+
+        if not has_pending:
+            break
+
 
 def run_stream_consumer(stop_event: threading.Event) -> None:
     """
     Continuous background worker loop that consumes events from Redis Streams.
 
     1. Retries connection and group creation until Redis is ready.
-    2. Long-polls for new undelivered messages (">") up to 100 at a time.
-    3. Invokes batch processing and acknowledges (XACK) processed message IDs.
+    2. Drains any pending unacknowledged messages ('0') left over from previous crashes.
+    3. Long-polls for new undelivered messages ('>') up to 100 at a time.
+    4. Invokes idempotent batch processing and acknowledges (XACK) processed message IDs.
     """
     r = init_redis()
 
@@ -139,9 +191,13 @@ def run_stream_consumer(stop_event: threading.Event) -> None:
     while not stop_event.is_set():
         try:
             setup_consumer_group(r)
+            drain_pending_messages(r, stop_event)
             break
         except redis.exceptions.ConnectionError:
             logger.warning("Redis unavailable. Retrying consumer group setup in 2s...")
+            time.sleep(2)
+        except Exception as e:
+            logger.error(f"Error during initial PEL recovery: {e}")
             time.sleep(2)
 
     # Main event consumption loop
@@ -167,4 +223,3 @@ def run_stream_consumer(stop_event: threading.Event) -> None:
         except Exception as e:
             logger.error(f"Error in Redis stream consumer loop: {e}")
             time.sleep(1)
-
