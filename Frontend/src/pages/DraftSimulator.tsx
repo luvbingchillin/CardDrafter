@@ -20,7 +20,7 @@ export interface Seat {
   Index: number;
   UserID: string;
   IsReady: boolean;
-  Client: object | null; // Non-null if player is currently connected
+  IsConnected: boolean;
 }
 
 export type DraftState = 'LOBBY' | 'DRAFTING' | 'FINISHED';
@@ -342,8 +342,8 @@ export function DraftSimulator() {
                         </div>
                         <div className={styles.seatIndicators}>
                           <span className={styles.seatIndicatorItem}>
-                            <StatusDot status={seat.Client ? 'online' : 'offline'} />
-                            {seat.Client ? 'Online' : 'Offline'}
+                            <StatusDot status={seat.IsConnected ? 'online' : 'offline'} />
+                            {seat.IsConnected ? 'Online' : 'Offline'}
                           </span>
                           <span className={styles.seatIndicatorItem}>
                             <StatusDot status={seat.IsReady ? 'online' : 'waiting'} />
@@ -411,7 +411,7 @@ export function DraftSimulator() {
                         !lobbyState.packSets ||
                         lobbyState.packSets.length === 0 ||
                         lobbyState.seats.length === 0 ||
-                        !lobbyState.seats.every((s) => !s.Client || s.IsReady)
+                        !lobbyState.seats.every((s) => !s.IsConnected || s.IsReady)
                       }
                     >
                       Start Draft
@@ -533,7 +533,7 @@ export function DraftSimulator() {
                             key={seat.UserID}
                             className={`${styles.neighborBadge} ${seat.UserID === currentUser ? styles.neighborBadgeSelf : ''}`}
                           >
-                            <StatusDot status={seat.Client ? 'online' : 'offline'} />
+                            <StatusDot status={seat.IsConnected ? 'online' : 'offline'} />
                             Seat {seat.Index + 1}: {seat.UserID === currentUser ? 'You' : seat.UserID}
                           </span>
                         ))}
