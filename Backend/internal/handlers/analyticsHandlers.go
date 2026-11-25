@@ -1,11 +1,22 @@
-﻿package handlers
+package handlers
 
 import (
 	"backend/internal/models"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
+
+// maxRequestBodyBytes caps incoming JSON request bodies at 1 MB to prevent memory exhaustion DoS.
+const maxRequestBodyBytes = 1 << 20
+
+// writeJSONError sends a consistent JSON {"error": "..."} payload with the given HTTP status code.
+func writeJSONError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(models.ErrorResponse{Error: message})
+}
 
 // AnalyticsProvider defines the analytics query contract required by AnalyticsHandler.
 type AnalyticsProvider interface {
@@ -29,18 +40,19 @@ func NewAnalyticsHandler(analyticsRepo AnalyticsProvider) *AnalyticsHandler {
 func (h *AnalyticsHandler) GetSetAnalytics(w http.ResponseWriter, r *http.Request) {
 	setCode := r.PathValue("setCode")
 	if setCode == "" {
-		http.Error(w, "set code is required", http.StatusBadRequest)
+		writeJSONError(w, "set code is required", http.StatusBadRequest)
 		return
 	}
 
 	analytics, err := h.analyticsRepo.GetAnalyticsBySet(r.Context(), setCode)
 	if err != nil {
-		http.Error(w, "failed to retrieve analytics: "+err.Error(), http.StatusInternalServerError)
+		slog.Error("Failed to retrieve set analytics", "set_code", setCode, "err", err)
+		writeJSONError(w, "failed to retrieve analytics", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(analytics); err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		slog.Error("Failed to encode analytics response", "set_code", setCode, "err", err)
 	}
 }

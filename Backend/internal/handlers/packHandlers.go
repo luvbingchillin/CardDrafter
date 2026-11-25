@@ -1,10 +1,11 @@
-﻿package handlers
+package handlers
 
 import (
 	"backend/internal/models"
 	"backend/internal/utils"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -38,11 +39,10 @@ func NewPackHandler(packService PackOpener, simService PackSimulator) *PackHandl
 func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request) {
 	setCode := r.PathValue("setCode")
 	if setCode == "" {
-		http.Error(w, "set code is required", http.StatusBadRequest)
+		writeJSONError(w, "set code is required", http.StatusBadRequest)
 		return
 	}
 
-	// Extract logged-in user if token cookie is present
 	userID := "anonymous"
 	if cookie, err := r.Cookie("token"); err == nil && cookie != nil {
 		if claims, err := utils.ValidateToken(cookie.Value); err == nil {
@@ -52,11 +52,15 @@ func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request) {
 
 	cards, err := h.packService.OpenPack(r.Context(), setCode, userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("Failed to open booster pack", "set_code", setCode, "user_id", userID, "err", err)
+		writeJSONError(w, "failed to generate booster pack for set "+setCode, http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cards)
+	if err := json.NewEncoder(w).Encode(cards); err != nil {
+		slog.Error("Failed to encode booster pack response", "set_code", setCode, "err", err)
+	}
 }
 
 // SimulatePacks handles POST /api/packs/{setCode}/simulate.
@@ -64,33 +68,31 @@ func (h *PackHandler) OpenPack(w http.ResponseWriter, r *http.Request) {
 func (h *PackHandler) SimulatePacks(w http.ResponseWriter, r *http.Request) {
 	setCode := r.PathValue("setCode")
 	if setCode == "" {
-		http.Error(w, "set code is required", http.StatusBadRequest)
+		writeJSONError(w, "set code is required", http.StatusBadRequest)
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	var req models.SimulationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "invalid request payload"})
+		writeJSONError(w, "invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	if req.PackCount <= 0 || req.PackCount > 100000 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "packCount must be between 1 and 100,000"})
+		writeJSONError(w, "packCount must be between 1 and 100,000", http.StatusBadRequest)
 		return
 	}
 
 	result, err := h.simService.RunSimulation(r.Context(), setCode, req.PackCount)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
+		slog.Error("Failed to run pack simulation", "set_code", setCode, "pack_count", req.PackCount, "err", err)
+		writeJSONError(w, "failed to execute pack simulation", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		slog.Error("Failed to encode simulation response", "set_code", setCode, "err", err)
+	}
 }
