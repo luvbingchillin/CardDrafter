@@ -20,6 +20,9 @@ type RedisEventStore struct {
 }
 
 func NewRedisEventStore(rdb *redis.Client) *RedisEventStore {
+	if rdb == nil {
+		return nil
+	}
 	return &RedisEventStore{rdb: rdb}
 }
 
@@ -28,6 +31,9 @@ func (s *RedisEventStore) streamKey(roomID string) string {
 }
 
 func (s *RedisEventStore) Append(ctx context.Context, roomID string, event draft.DraftEvent) error {
+	if s == nil || s.rdb == nil {
+		return nil
+	}
 	jsonBytes, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("failed to marshal draft event: %w", err)
@@ -56,6 +62,9 @@ func (s *RedisEventStore) Append(ctx context.Context, roomID string, event draft
 }
 
 func (s *RedisEventStore) LoadEvents(ctx context.Context, roomID string) ([]draft.DraftEvent, error) {
+	if s == nil || s.rdb == nil {
+		return nil, nil
+	}
 	messages, err := s.rdb.XRange(ctx, s.streamKey(roomID), "-", "+").Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load events from stream: %w", err)

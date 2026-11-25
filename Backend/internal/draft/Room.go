@@ -67,6 +67,7 @@ type Room struct {
 	register    chan *Client
 	unregister  chan *Client
 	actionChan  chan PlayerAction
+	done        chan struct{}
 }
 
 func NewRoom(id string, packService PackOpener, eventStore EventStore, hub *Hub) *Room {
@@ -80,10 +81,17 @@ func NewRoom(id string, packService PackOpener, eventStore EventStore, hub *Hub)
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		actionChan:  make(chan PlayerAction, 64),
+		done:        make(chan struct{}),
 	}
 }
 
+// Done returns a channel that is closed when the Room actor loop terminates.
+func (r *Room) Done() <-chan struct{} {
+	return r.done
+}
+
 func (r *Room) Run() {
+	defer close(r.done)
 	r.recoverState()
 
 	ticker := time.NewTicker(1 * time.Second)
