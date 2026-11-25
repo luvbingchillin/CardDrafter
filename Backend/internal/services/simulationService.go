@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const maxConcurrentSims = 4
+
 // CardProvider defines the narrow data access contract required by SimulationService.
 // Decouples the simulation engine from direct database or concrete repository dependencies.
 type CardProvider interface {
@@ -19,11 +21,12 @@ type CardProvider interface {
 // SimulationService coordinates multi-core Monte Carlo booster simulations.
 type SimulationService struct {
 	cardProvider CardProvider
+	sem chan struct{}
 }
 
 // NewSimulationService constructs an instance of SimulationService.
 func NewSimulationService(cp CardProvider) *SimulationService {
-	return &SimulationService{cardProvider: cp}
+	return &SimulationService{cardProvider: cp, sem:make(chan struct{}, maxConcurrentSims)}
 }
 
 type workerSummary struct {
@@ -49,6 +52,12 @@ func (s *SimulationService) RunSimulation(ctx context.Context, setCode string, t
 	}
 	if len(cards) == 0 {
 		return nil, errors.New("no cards found for set: " + setCode)
+	}
+	select{
+		case s.sem <-struct{}{}:
+			defer func() {<-s.sem}()
+		case <-ctx.Done():
+			return nil, ctx.Err()
 	}
 
 	// 2. Partition work evenly across hardware threads

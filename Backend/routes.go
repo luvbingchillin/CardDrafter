@@ -12,6 +12,7 @@ func setupRoutes(
 	packHandler *handlers.PackHandler,
 	analyticsHandler *handlers.AnalyticsHandler,
 	draftHandler *draft.DraftHandler,
+	healthHandler  *handlers.HealthHandler,
 ) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /api/packs", handlers.GetPacks)
@@ -25,5 +26,7 @@ func setupRoutes(
 	router.HandleFunc("POST /api/packs/{setCode}/simulate", packHandler.SimulatePacks)
 	router.HandleFunc("GET /api/packs/{setCode}/analytics", analyticsHandler.GetSetAnalytics)
 	router.Handle("GET /api/draft/{roomId}/ws", middleware.OptionalAuthMiddleware(http.HandlerFunc(draftHandler.ServeWs)))
+	router.HandleFunc("GET /healthz", healthHandler.Liveness)
+	router.HandleFunc("GET /readyz", healthHandler.Readiness)
 	return router
 }
