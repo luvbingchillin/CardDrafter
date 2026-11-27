@@ -107,8 +107,11 @@ export function DraftSimulator() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/api/draft/${roomId}/ws`;
-  const isHost = Boolean(lobbyState && currentUser && lobbyState.hostId === currentUser);
+  const wsUrl = currentUser
+    ? `${protocol}//${window.location.host}/api/draft/${roomId}/ws`
+    : `${protocol}//${window.location.host}/api/draft/${roomId}/ws?userId=${encodeURIComponent(guestId)}`;
+  const effectiveUserId = currentUser || guestId
+  const isHost = Boolean(lobbyState && effectiveUserId && lobbyState.hostId === effectiveUserId);
 
   // Group drafted cards by CMC for the Mana Curve deckbuilder view
   const groupedPool = useMemo(() => {
@@ -149,6 +152,7 @@ export function DraftSimulator() {
     setLobbyState(null);
     setDraftState(null);
     setSelectedCardId(null);
+    setIsConnected(false);
   };
 
   const sendAction = (type: string, payload: unknown = {}) => {
@@ -201,34 +205,59 @@ export function DraftSimulator() {
 
   useEffect(() => {
     if (!roomId) return;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+    let isCleanedUp = false
+    let reconnectAttempt = 0
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-    ws.onopen = () => setIsConnected(true);
-    ws.onclose = () => {
-      setIsConnected(false);
-    };
-    ws.onerror = (err) => console.error("WebSocket error:", err);
+    const connect = () => {
+      if (isCleanedUp) return
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        setIsConnected(true)
+        reconnectAttempt = 0
+      };
+      ws.onclose = () => {
+        setIsConnected(false);
+      };
+      ws.onerror = (err) => console.error("WebSocket error:", err);
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'LOBBY_UPDATE') {
-          setLobbyState(msg.payload);
-        } else if (msg.type === 'DRAFT_UPDATE') {
-          setDraftState(msg.payload);
-          setTimeRemaining(msg.payload.timeRemaining);
-          setSelectedCardId(null); // Reset selection on new pack arrival
-        } else if (msg.type === 'TIMER_TICK') {
-          setTimeRemaining(msg.payload.timeRemaining);
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'LOBBY_UPDATE') {
+            setLobbyState(msg.payload);
+          } else if (msg.type === 'DRAFT_UPDATE') {
+            setDraftState(msg.payload);
+            setTimeRemaining(msg.payload.timeRemaining);
+            setSelectedCardId(null); // Reset selection on new pack arrival
+          } else if (msg.type === 'TIMER_TICK') {
+            setTimeRemaining(msg.payload.timeRemaining);
+          }
+        } catch (err) {
+          console.error("Failed to parse WebSocket message:", err);
         }
-      } catch (err) {
-        console.error("Failed to parse WebSocket message:", err);
+      };
+      ws.onclose = () => {
+
+        setIsConnected(false)
+        if (isCleanedUp) return
+        const baseDelay = Math.min(1000 * 2 ** reconnectAttempt, 15000);
+        const jitter = Math.random() * 1000;
+        reconnectAttempt += 1
+        reconnectTimer = setTimeout(connect, baseDelay + jitter)
       }
-    };
+
+    }
+    connect()
 
     return () => {
-      ws.close();
+      isCleanedUp = true
+      if (reconnectTimer != null) {
+        clearTimeout(reconnectTimer)
+
+      }
+      wsRef.current?.close();
       wsRef.current = null;
     };
   }, [roomId, wsUrl]);
@@ -330,7 +359,7 @@ export function DraftSimulator() {
 
                 <div className={styles.seatsGrid}>
                   {lobbyState.seats.map((seat) => {
-                    const isSelf = seat.UserID === currentUser;
+                    const isSelf = seat.UserID === effectiveUserId;
                     return (
                       <div
                         key={seat.UserID}
@@ -490,8 +519,8 @@ export function DraftSimulator() {
                     <span className={styles.packInstruction}>
                       {draftState?.currentPack && draftState.currentPack.length > 0
                         ? (selectedCardId
-                            ? 'Click highlighted card again or press "Confirm Pick" to lock in'
-                            : 'Click a card to inspect and select it')
+                          ? 'Click highlighted card again or press "Confirm Pick" to lock in'
+                          : 'Click a card to inspect and select it')
                         : 'Waiting for neighbor'}
                     </span>
                   </div>
@@ -531,10 +560,10 @@ export function DraftSimulator() {
                         {lobbyState.seats.map((seat) => (
                           <span
                             key={seat.UserID}
-                            className={`${styles.neighborBadge} ${seat.UserID === currentUser ? styles.neighborBadgeSelf : ''}`}
+                            className={`${styles.neighborBadge} ${seat.UserID === effectiveUserId ? styles.neighborBadgeSelf : ''}`}
                           >
                             <StatusDot status={seat.IsConnected ? 'online' : 'offline'} />
-                            Seat {seat.Index + 1}: {seat.UserID === currentUser ? 'You' : seat.UserID}
+                            Seat {seat.Index + 1}: {seat.UserID === effectiveUserId ? 'You' : seat.UserID}
                           </span>
                         ))}
                       </div>
